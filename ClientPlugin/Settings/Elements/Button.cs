@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using VRage.Utils;
 
 namespace ClientPlugin.Settings.Elements
 {
@@ -12,18 +13,20 @@ namespace ClientPlugin.Settings.Elements
 
         public ButtonAttribute(string label = null, string description = null)
         {
-            
             Label = label;
             Description = description;
         }
 
-        public List<MyGuiControlBase> GetElements(string name, Func<object> propertyGetter, Action<object> propertySetter)
+        public List<Control> GetControls(string name, Func<object> propertyGetter, Action<object> propertySetter)
         {
             var label = Tools.GetLabelOrDefault(name, Label);
             var button = new MyGuiControlButton(text: new StringBuilder(label), toolTip: Description);
             button.ButtonClicked += (_)=>((Action)propertyGetter())();
 
-            return new List<MyGuiControlBase>() { button };
+            return new List<Control>()
+            {
+                new Control(button, originAlign: MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER),
+            };
         }
         public List<Type> SupportedTypes { get; } = new List<Type>()
         {

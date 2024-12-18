@@ -1,104 +1,197 @@
 using ClientPlugin.Settings;
 using ClientPlugin.Settings.Elements;
-using Sandbox.Graphics.GUI;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text;
+using EmptyKeys.UserInterface.Input;
 using VRage.Input;
+using VRage.Utils;
 using VRageMath;
 
 
 namespace ClientPlugin
 {
-    public enum DropDownEnum
-    {
-        Alpha,
-        Beta,
-        Gamma,
-        Delta,
-        Epsilon
-    }
-
     public class Config : INotifyPropertyChanged
     {
         public static readonly Config Default = new Config();
         public static readonly Config Current = ConfigStorage.Load();
 
+        // Options
+        private string sectionsSubdirectory = "Sections";
+        private bool deleteConfirmation = true;
+        private bool cutConfirmation = true;
+        private bool showHints = true;
+        private bool showSize = true;
+        private bool highlightBlocks = false;
+        private int highlightDensity = 3;
+        private Color firstColor = Color.Blue;
+        private Color secondColor = Color.Green;
+        private Color boxColor = Color.Cyan;
+        private Color finalBoxColor = Color.Yellow;
+        private float textPosition = 0.70f;
+        private float sizeTextScale = 2f;
+        private Color hintColor = new Color(0xdd, 0xdd, 0);
+        private Color sizeColor = new Color(0xff, 0x99, 0);
+        private Binding activate = new Binding(MyKeys.NumPad0);
+        private Binding resetSelection = new Binding(MyKeys.R);
+        private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
+        private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
+
+        // Not configurable yet
+        public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
+        public readonly MyStringId BoxMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
+
+        // UI
+
+        public readonly string Title = "Sections";
+
+        [Textbox(description: "Name of the blueprint subdirectory to store the sections to")]
+        public string SectionsSubdirectory
+        {
+            get => sectionsSubdirectory;
+            set => SetField(ref sectionsSubdirectory, value);
+        }
+
+        [Checkbox(description: "Ask for confirmation before deleting the selected blocks (Backspace)")]
+        public bool DeleteConfirmation
+        {
+            get => deleteConfirmation;
+            set => SetField(ref deleteConfirmation, value);
+        }
+
+        [Checkbox(description: "Ask for confirmation before cutting the selected blocks (RMB)")]
+        public bool CutConfirmation
+        {
+            get => cutConfirmation;
+            set => SetField(ref cutConfirmation, value);
+        }
+
+        [Checkbox(description: "Enable showing the hints on screen")]
+        public bool ShowHints
+        {
+            get => showHints;
+            set => SetField(ref showHints, value);
+        }
+
+        [Checkbox(description: "Enable showing the size of the selection box on screen")]
+        public bool ShowSize
+        {
+            get => showSize;
+            set => SetField(ref showSize, value);
+        }
+
+        [Checkbox(description: "Highlight the first and second blocks in the selection box resizing state")]
+        public bool HighlightBlocks
+        {
+            get => highlightBlocks;
+            set => SetField(ref highlightBlocks, value);
+        }
+
+        [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
+        public int HighlightDensity
+        {
+            get => highlightDensity;
+            set => SetField(ref highlightDensity, value);
+        }
+
+        [Color(description: "Highlight color of the first selected block")]
+        public Color FirstColor
+        {
+            get => firstColor;
+            set => SetField(ref firstColor, value);
+        }
+
+        [Color(description: "Highlight color of the second selected block")]
+        public Color SecondColor
+        {
+            get => secondColor;
+            set => SetField(ref secondColor, value);
+        }
+
+        [Color(description: "Highlight color of the selection box while picking the second block")]
+        public Color BoxColor
+        {
+            get => boxColor;
+            set => SetField(ref boxColor, value);
+        }
+
+        [Color(description: "Highlight color of the final selection box")]
+        public Color FinalBoxColor
+        {
+            get => finalBoxColor;
+            set => SetField(ref finalBoxColor, value);
+        }
+
+        [Slider(0f, 0.9f, 0.01f, description: "Vertical position of the box size and hints on the screen")]
+        public float TextPosition
+        {
+            get => textPosition;
+            set => SetField(ref textPosition, value);
+        }
+
+        [Slider(0.1f, 10f, 0.01f, description: "Font scale for the box size")]
+        public float SizeTextScale
+        {
+            get => sizeTextScale;
+            set => SetField(ref sizeTextScale, value);
+        }
+
+        [Color(description: "Hint text color")]
+        public Color HintColor
+        {
+            get => hintColor;
+            set => SetField(ref hintColor, value);
+        }
+
+        [Color(description: "Box size text color")]
+        public Color SizeColor
+        {
+            get => sizeColor;
+            set => SetField(ref sizeColor, value);
+        }
+
+        [Keybind(description: "Activate box selection")]
+        public Binding Activate
+        {
+            get => activate;
+            set => SetField(ref activate, value);
+        }
+
+        [Keybind(description: "Reset the selection box to its original extents")]
+        public Binding ResetSelection
+        {
+            get => resetSelection;
+            set => SetField(ref resetSelection, value);
+        }
+
+        [Keybind(description: "Save selected blocks as a section blueprint")]
+        public Binding SaveSelectedBlocks
+        {
+            get => saveSelectedBlocks;
+            set => SetField(ref saveSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Delete selected blocks (with confirmation by default)")]
+        public Binding DeleteSelectedBlocks
+        {
+            get => deleteSelectedBlocks;
+            set => SetField(ref deleteSelectedBlocks, value);
+        }
+
+        // Infra
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+
+        private bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
             OnPropertyChanged(propertyName);
             return true;
-        }
-
-        // ----- Build your UI -----
-        public readonly string Title = "Config Demo";
-
-        private MyKeys _keybind = MyKeys.None;
-        [Keybind(description: "Keybind Tooltip - Unbind by right clicking the button")]
-        public MyKeys Keybind
-        {
-            get => _keybind;
-            set => SetField(ref _keybind, value);
-        }
-
-        public string _text = "Default Text";
-        [Textbox(description: "Textbox Tooltip")]
-        public string Text
-        {
-            get => _text;
-            set => SetField(ref _text, value);
-        }
-
-        public DropDownEnum _dropdown = DropDownEnum.Alpha;
-        [Dropdown(description: "Dropdown Tooltip")]
-        public DropDownEnum Dropdown
-        {
-            get => _dropdown;
-            set => SetField(ref _dropdown, value);
-        }
-
-        public float _number = 0.1f;
-        [Slider(-5f, 4.5f, 0.5f, SliderAttribute.SliderType.Float, description: "Float Slider Tooltip")]
-        public float Number
-        {
-            get => _number;
-            set => SetField(ref _number, value);
-        }
-
-        public int _integer = 2;
-        [Slider(-1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Integer Slider Tooltip")]
-        public int Integer
-        {
-            get => _integer;
-            set => SetField(ref _integer, value);
-        }
-
-        public bool _toggle = true;
-        [Checkbox(description: "Checkbox Tooltip")]
-        public bool Toggle
-        {
-            get => _toggle;
-            set => SetField(ref _toggle, value);
-        }
-
-        [Button(description: "Button Tooltip")]
-        public void Button()
-        {
-            MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(
-                MyMessageBoxStyleEnum.Info,
-                buttonType: MyMessageBoxButtonsType.OK,
-                messageText: new StringBuilder("You clicked me!"),
-                messageCaption: new StringBuilder("Custom Button Function"),
-                size: new Vector2(0.6f, 0.5f)
-            ));
         }
     }
 }

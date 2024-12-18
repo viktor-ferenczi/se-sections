@@ -1,6 +1,7 @@
 using Sandbox.Graphics.GUI;
 using System;
 using System.Collections.Generic;
+using VRage.Utils;
 
 namespace ClientPlugin.Settings.Elements
 {
@@ -15,17 +16,17 @@ namespace ClientPlugin.Settings.Elements
             Description = description;
         }
 
-        public List<MyGuiControlBase> GetElements(string name, Func<object> propertyGetter, Action<object> propertySetter)
+        public List<Control> GetControls(string name, Func<object> propertyGetter, Action<object> propertySetter)
         {               
             var label = Tools.GetLabelOrDefault(name, Label);
-            return new List<MyGuiControlBase>()
+            return new List<Control>()
             {
-                new MyGuiControlLabel(text: label),
-                new MyGuiControlCheckbox(toolTip: Description)
+                new Control(new MyGuiControlLabel(text: label), minWidth: Control.LabelMinWidth),
+                new Control(new MyGuiControlCheckbox(toolTip: Description)
                 {
                     IsChecked = (bool)propertyGetter(),
                     IsCheckedChanged = (x) => propertySetter(x.IsChecked),
-                }
+                }),
             };
         }
         public List<Type> SupportedTypes { get; } = new List<Type>()

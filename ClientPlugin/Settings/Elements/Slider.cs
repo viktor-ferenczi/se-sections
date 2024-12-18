@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using VRage.Utils;
+using VRageMath;
 
 namespace ClientPlugin.Settings.Elements
 {
@@ -32,7 +33,7 @@ namespace ClientPlugin.Settings.Elements
             Description = description;
         }
 
-        public List<MyGuiControlBase> GetElements(string name, Func<object> propertyGetter, Action<object> propertySetter)
+        public List<Control> GetControls(string name, Func<object> propertyGetter, Action<object> propertySetter)
         {
             var valueLabel = new MyGuiControlLabel();
 
@@ -85,17 +86,22 @@ namespace ClientPlugin.Settings.Elements
                 MinimumStepOverride = Step,
             };
 
+            if (Type == SliderType.Float)
+            {
+                slider.LabelDecimalPlaces = (int)Math.Max(1, Math.Ceiling(-Math.Log10(2f * Step)));
+            }
+
             slider.ValueChanged += ValueUpdate;
             slider.SliderSetValueManual = SpecifyValue;
 
             ValueUpdate(slider);
 
             var label = Tools.GetLabelOrDefault(name, Label);
-            return new List<MyGuiControlBase>()
+            return new List<Control>()
             {
-                new MyGuiControlLabel(text: label),
-                valueLabel,
-                slider,
+                new Control(new MyGuiControlLabel(text: label), minWidth: Control.LabelMinWidth),
+                new Control(slider, fillFactor: 1f),
+                new Control(valueLabel, minWidth: 0.06f, offset: new Vector2(0.005f, 0f)),
             };
         }
 
