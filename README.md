@@ -24,7 +24,7 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 
 1. Install Plugin Loader's [Space Engineers Launcher](https://github.com/sepluginloader/SpaceEngineersLauncher)
 2. Run the game
-3. In the new **Plugins** menu add the "Better Terminal" plugin
+3. In the new **Plugins** menu add the **Sections** plugin
 4. Apply and restart the game as requested
 
 ## Features
