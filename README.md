@@ -29,7 +29,8 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 
 ## Features
 
-[Demo Video](https://www.youtube.com/watch?v=W0S-wIaIZ80)
+- [Demo Video](https://www.youtube.com/watch?v=W0S-wIaIZ80)
+- [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
 This plugin is designed for offline ship design. It works only in creative mode.
 It is availabel in survival mode only if the creative mode tools are enabled for the player.
