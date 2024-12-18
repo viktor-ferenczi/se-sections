@@ -1,7 +1,8 @@
 # Sections
 
-Allows for selecting a section of a grid, then copying, cutting,
-deleting or blueprinting the blocks inside it.
+**Sections** is a **Space Engineers plugin**, which allows for **selecting part of a grid**, then copying, cutting, deleting or blueprinting the blocks inside the selection box.
+
+**This is an implementation of a publicly announced Space Engineers 2 feature** for the current version of the game. It is so useful, that I could not stand not implementing it. Sorry. :)
 
 [![Watch the video](doc/Thumbnail.png)](https://www.youtube.com/watch?v=W0S-wIaIZ80)
 
