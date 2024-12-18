@@ -39,6 +39,7 @@ namespace ClientPlugin.Logic
         // Reflection
         private static readonly MethodInfo ClearRenderData = AccessTools.DeclaredMethod(typeof(MyCubeBuilder), "ClearRenderData");
         private static readonly MethodInfo CheckCopyPasteAllowed = AccessTools.DeclaredMethod(typeof(MyClipboardComponent), "CheckCopyPasteAllowed");
+        private static readonly FieldInfo ScreensField = AccessTools.DeclaredField(typeof(MyScreenManager), "m_screens");
 
         // Indexed by enum Base6Directions.Direction
         // MyControlsSpace.CUBE_ROTATE_VERTICAL_POSITIVE => MyKeys.PageDown
@@ -369,14 +370,23 @@ namespace ClientPlugin.Logic
             if (MyGuiScreenTerminal.IsOpen)
                 return true;
 
-            // But it does not catch the Blueprints screen (F10),
-            // so we need this hackish solution:
-            // Draw only if the two base screens are open:
-            // MyGuiScreenGamePlay
-            // MyGuiScreenHudSpace
-            // It may break, but I haven't found any such case yet.
-            if (MyScreenManager.GetScreensCount() > 2)
+            // Do not draw over the Blueprints screen (F10)
+            var screens = ScreensField.GetValue(null) as List<MyGuiScreenBase>;
+            if (screens == null)
                 return true;
+            foreach (var screen in screens)
+            {
+                if (screen is MyGuiScreenGamePlay ||
+                    screen is MyGuiScreenHudBase)
+                    continue;
+
+                var name = screen.GetType().Name;
+                if (name == "MyGuiScreenDebugTiming" || // Compatibility with Shift-F11 statistics
+                    name == "FPSOverlay") // Compatibility with the FPS Counter plugin
+                    continue;
+
+                return true;
+            }
 
             switch (state)
             {
