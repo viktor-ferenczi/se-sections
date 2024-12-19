@@ -490,6 +490,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Logic\Constants.cs" />
     <Compile Include="Logic\Extensions.cs" />
     <Compile Include="Logic\Logic.cs" />
     <Compile Include="Config.cs" />

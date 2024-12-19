@@ -37,19 +37,19 @@ namespace ClientPlugin.Settings.Elements
 
             var textBox = new MyGuiControlTextbox(defaultText: defaultColorHex, maxLength: HasAlpha ? 8 : 6);
             textBox.Size += new Vector2(0.02f, 0f); // Sometimes the text box could fit only 5 upper case characters
-            
+
             originalBorderColor = textBox.BorderColor;
-            
+
             textBox.TextChanged += (box) =>
             {
                 if (HasAlpha ? box.Text.TryParseColorFromHexRgba(out var color) : box.Text.TryParseColorFromHexRgb(out color))
                 {
                     textBox.BorderColor = originalBorderColor;
-                    
+
                     if (color == PropertyGetter())
                         return;
-                    
-                    propertySetter(color);
+
+                    PropertySetter(color);
                     textBox.Text = HasAlpha ? color.ToHexStringRgba() : color.ToHexStringRgb();
                     sample.BorderColor = color;
                 }
@@ -58,7 +58,7 @@ namespace ClientPlugin.Settings.Elements
                     textBox.BorderColor = Color.Red;
                 }
             };
-            
+
             textBox.SetToolTip(Description);
 
             var label = Tools.GetLabelOrDefault(name, Label);
@@ -70,7 +70,6 @@ namespace ClientPlugin.Settings.Elements
             };
 
             void PropertySetter(Color color) => propertySetter(color);
-
             Color PropertyGetter() => (Color)propertyGetter();
         }
 

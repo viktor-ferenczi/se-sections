@@ -22,10 +22,10 @@ namespace ClientPlugin
         private bool cutConfirmation = true;
         private bool showHints = true;
         private bool showSize = true;
-        private bool highlightBlocks = false;
         private int highlightDensity = 3;
         private Color firstColor = Color.Blue;
         private Color secondColor = Color.Green;
+        private Color aimedColor = Color.Blue;
         private Color boxColor = Color.Cyan;
         private Color finalBoxColor = Color.Yellow;
         private float textPosition = 0.70f;
@@ -80,13 +80,6 @@ namespace ClientPlugin
             set => SetField(ref showSize, value);
         }
 
-        [Checkbox(description: "Highlight the first and second blocks in the selection box resizing state")]
-        public bool HighlightBlocks
-        {
-            get => highlightBlocks;
-            set => SetField(ref highlightBlocks, value);
-        }
-
         [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
         public int HighlightDensity
         {
@@ -106,6 +99,13 @@ namespace ClientPlugin
         {
             get => secondColor;
             set => SetField(ref secondColor, value);
+        }
+
+        [Color(description: "Highlight color of the aimed block for blueprinting")]
+        public Color AimedColor
+        {
+            get => aimedColor;
+            set => SetField(ref aimedColor, value);
         }
 
         [Color(description: "Highlight color of the selection box while picking the second block")]

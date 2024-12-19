@@ -22,7 +22,7 @@ namespace ClientPlugin.Logic
 
         public static Base6Directions.Direction[] FindClosestDirectionsTo(this MatrixD matrix, MatrixD other)
         {
-            var bestForward = Base6Directions.Direction.Right;
+            var bestForward = Base6Directions.Direction.Forward;
             var bestUp = Base6Directions.Direction.Up;
             var bestFit = double.NegativeInfinity;
 
