@@ -95,7 +95,6 @@ The sections have thumbnails generated from a screenshot taken when the section
 is saved. Position your character to have a good view before saving the section,
 if possible. If not, then you can make a new screenshot in the Blueprints dialog.
 ![Blueprints dialog](doc/BlueprintsDialog.png "Blueprints dialog")
-![Section thumbnail](doc/SectionThumbnail.png "Section thumbnail")
 
 ### Pasting sections
 
