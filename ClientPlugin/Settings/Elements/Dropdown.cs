@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using VRage.Utils;
 
 namespace ClientPlugin.Settings.Elements
 {
@@ -61,7 +60,7 @@ namespace ClientPlugin.Settings.Elements
             return new List<Control>()
             {
                 new Control(new MyGuiControlLabel(text: label), minWidth: Control.LabelMinWidth),
-                new Control(dropdown),
+                new Control(dropdown, fillFactor: 1f),
             };
         }
         public List<Type> SupportedTypes { get; } = new List<Type>()

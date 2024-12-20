@@ -13,8 +13,7 @@ namespace ClientPlugin
 {
     public class Config : INotifyPropertyChanged
     {
-        public static readonly Config Default = new Config();
-        public static readonly Config Current = ConfigStorage.Load();
+        #region Options
 
         // Options
         private string sectionsSubdirectory = "Sections";
@@ -43,7 +42,9 @@ namespace ClientPlugin
         public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
         public readonly MyStringId BoxMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
 
-        // UI
+        #endregion
+
+        #region User interface
 
         public readonly string Title = "Sections";
 
@@ -194,7 +195,13 @@ namespace ClientPlugin
             set => SetField(ref deleteSelectedBlocks, value);
         }
 
-        // Infra
+        #endregion
+
+        #region Property change notification bilerplate
+
+        public static readonly Config Default = new Config();
+        public static readonly Config Current = ConfigStorage.Load();
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -209,5 +216,7 @@ namespace ClientPlugin
             OnPropertyChanged(propertyName);
             return true;
         }
+
+        #endregion
     }
 }

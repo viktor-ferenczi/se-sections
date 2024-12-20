@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using VRage.Game;
-using VRage.Utils;
 using VRageMath;
 
 namespace ClientPlugin.Settings.Elements
@@ -42,7 +41,7 @@ namespace ClientPlugin.Settings.Elements
 
             originalBorderColor = textBox.BorderColor;
 
-            textBox.TextChanged += (box) =>
+            textBox.TextChanged += box =>
             {
                 if (HasAlpha ? box.Text.TryParseColorFromHexRgba(out var color) : box.Text.TryParseColorFromHexRgb(out color))
                 {

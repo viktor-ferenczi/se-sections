@@ -25,7 +25,8 @@ namespace ClientPlugin.Settings.Elements
 
             return new List<Control>()
             {
-                new Control(button, originAlign: MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER),
+                new Control(new MyGuiControlLabel(text: ""), fixedWidth: Control.LabelMinWidth),
+                new Control(button, originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP),
             };
         }
         public List<Type> SupportedTypes { get; } = new List<Type>()

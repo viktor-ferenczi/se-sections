@@ -50,7 +50,7 @@ namespace ClientPlugin.Settings.Elements
                 return false;
             }
 
-            color = Color.FromNonPremultiplied(
+            color = new Color(
                 Convert.ToInt16(match.Groups[1].Value, 16),
                 Convert.ToInt16(match.Groups[2].Value, 16),
                 Convert.ToInt16(match.Groups[3].Value, 16),
@@ -63,11 +63,11 @@ namespace ClientPlugin.Settings.Elements
             var match = RxHexColorRgbaRegex.Match(hex);
             if (!match.Success)
             {
-                color = Color.Black;
+                color = Color.Transparent;
                 return false;
             }
 
-            color = Color.FromNonPremultiplied(
+            color = new Color(
                 Convert.ToInt16(match.Groups[1].Value, 16),
                 Convert.ToInt16(match.Groups[2].Value, 16),
                 Convert.ToInt16(match.Groups[3].Value, 16),

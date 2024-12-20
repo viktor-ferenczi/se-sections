@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using VRage.Utils;
-using VRageMath;
 
 namespace ClientPlugin.Settings.Elements
 {
