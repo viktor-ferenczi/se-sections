@@ -100,8 +100,8 @@ namespace ClientPlugin.Settings.Elements
             return new List<Control>()
             {
                 new Control(new MyGuiControlLabel(text: label), minWidth: Control.LabelMinWidth),
-                new Control(slider, fillFactor: 1f),
-                new Control(valueLabel, minWidth: 0.06f, offset: new Vector2(0.005f, 0f)),
+                new Control(slider, fillFactor: 1f, rightMargin: 0.005f),
+                new Control(valueLabel, minWidth: 0.06f),
             };
         }
 

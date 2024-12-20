@@ -15,8 +15,9 @@ namespace ClientPlugin.Settings.Elements
         public readonly float? FillFactor;
         public readonly MyGuiDrawAlignEnum OriginAlign;
         public readonly Vector2 Offset;
+        public readonly float RightMargin;
 
-        public Control(MyGuiControlBase guiControl, float? fixedWidth = null, float minWidth = 0f, float? fillFactor = null, MyGuiDrawAlignEnum originAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER, Vector2? offset = null)
+        public Control(MyGuiControlBase guiControl, float? fixedWidth = null, float minWidth = 0f, float? fillFactor = null, MyGuiDrawAlignEnum originAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER, Vector2? offset = null, float rightMargin = 0f)
         {
             GuiControl = guiControl;
             FixedWidth = fixedWidth;
@@ -24,6 +25,7 @@ namespace ClientPlugin.Settings.Elements
             FillFactor = fillFactor;
             OriginAlign = originAlign;
             Offset = offset ?? Vector2.Zero;
+            RightMargin = rightMargin;
         }
     }
 }

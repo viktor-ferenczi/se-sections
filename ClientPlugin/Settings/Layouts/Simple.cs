@@ -54,6 +54,8 @@ namespace ClientPlugin.Settings.Layouts
 
         public override void LayoutControls()
         {
+            var totalWidth = ScrollPanel.ScrolledAreaSize.X - 2 * ElementPadding;
+            
             var controls = GetControls();
             var totalHeight = ElementPadding + controls.Select(row => row.Max(c => c.GuiControl.Size.Y) + ElementPadding).Sum();
             Parent.Size = new Vector2(Parent.Size.X, totalHeight);
@@ -70,33 +72,34 @@ namespace ClientPlugin.Settings.Layouts
                 
                 // Horizontal
                 
-                var totalMinWidth = row.Select(c => c.FixedWidth ?? c.MinWidth).Sum();
-                var remainingWidth = Math.Max(0f, ScrollPanel.ScrolledAreaSize.X - totalMinWidth);
+                var totalMinWidth = row.Select(c => (c.FixedWidth ?? c.MinWidth) + c.RightMargin).Sum();
+                var remainingWidth = Math.Max(0f, totalWidth - totalMinWidth);
                 var sumFillFactors = row.Select(c => c.FixedWidth.HasValue ? 0f : c.FillFactor ?? 0f).Sum();
                 var unitWidth = sumFillFactors > 0f ? remainingWidth / sumFillFactors : 0f;
 
-                var controlX = -0.5f * Parent.Size.X;
+                var controlX = -0.5f * Parent.Size.X + ElementPadding;
                 foreach (var control in row)
                 {
                     var guiControl = control.GuiControl;
                     guiControl.Position = new Vector2(controlX, controlY) + control.Offset;
                     guiControl.OriginAlign = control.OriginAlign;
 
+                    var sizeY = guiControl.Size.Y;
                     if (control.FixedWidth.HasValue)
                     {
-                        guiControl.Size = new Vector2(control.FixedWidth.Value, guiControl.Size.Y);
+                        guiControl.Size = new Vector2(control.FixedWidth.Value, sizeY);
                         guiControl.SetMaxWidth(control.FixedWidth.Value);
                     }
                     else if (control.FillFactor.HasValue)
                     {
-                        guiControl.Size = new Vector2(Math.Max(control.MinWidth, unitWidth * control.FillFactor.Value), guiControl.Size.Y);
+                        guiControl.Size = new Vector2(Math.Max(control.MinWidth, unitWidth * control.FillFactor.Value), sizeY);
                     } 
                     else
                     {
-                        guiControl.Size = new Vector2(Math.Max(guiControl.Size.X, control.MinWidth), guiControl.Size.Y);
+                        guiControl.Size = new Vector2(Math.Max(guiControl.Size.X, control.MinWidth), sizeY);
                     }
 
-                    controlX += guiControl.Size.X;
+                    controlX += guiControl.Size.X + control.RightMargin;
                 }
             }
             

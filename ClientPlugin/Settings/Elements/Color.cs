@@ -35,8 +35,10 @@ namespace ClientPlugin.Settings.Elements
                 BorderSize = 20
             };
 
-            var textBox = new MyGuiControlTextbox(defaultText: defaultColorHex, maxLength: HasAlpha ? 8 : 6);
-            textBox.Size += new Vector2(0.02f, 0f); // Sometimes the text box could fit only 5 upper case characters
+            var textBox = new MyGuiControlTextbox(defaultText: defaultColorHex, maxLength: HasAlpha ? 8 : 6)
+            {
+                Size = new Vector2(0.1f, 0.04f)
+            };
 
             originalBorderColor = textBox.BorderColor;
 
@@ -44,18 +46,22 @@ namespace ClientPlugin.Settings.Elements
             {
                 if (HasAlpha ? box.Text.TryParseColorFromHexRgba(out var color) : box.Text.TryParseColorFromHexRgb(out color))
                 {
-                    textBox.BorderColor = originalBorderColor;
+                    box.BorderColor = originalBorderColor;
+                    box.BorderEnabled = false;
 
-                    if (color == PropertyGetter())
-                        return;
-
-                    PropertySetter(color);
-                    textBox.Text = HasAlpha ? color.ToHexStringRgba() : color.ToHexStringRgb();
                     sample.BorderColor = color;
+                    
+                    if (color != PropertyGetter())
+                        PropertySetter(color);
+                    
+                    var text = HasAlpha ? color.ToHexStringRgba() : color.ToHexStringRgb();
+                    if (text != box.Text)
+                        box.Text = text;
                 }
                 else
                 {
-                    textBox.BorderColor = Color.Red;
+                    box.BorderColor = Color.Red;
+                    box.BorderEnabled = true;
                 }
             };
 
@@ -66,7 +72,7 @@ namespace ClientPlugin.Settings.Elements
             {
                 new Control(new MyGuiControlLabel(text: label), minWidth: Control.LabelMinWidth),
                 new Control(sample, offset: new Vector2(0f, 0.005f)),
-                new Control(textBox),
+                new Control(textBox, fixedWidth: textBox.Size.X),
             };
 
             void PropertySetter(Color color) => propertySetter(color);
