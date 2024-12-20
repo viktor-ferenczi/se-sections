@@ -564,6 +564,7 @@ namespace ClientPlugin.Logic
                 return;
 
             var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
+            MyEntities.RemapObjectBuilder(gridBuilder);
 
             // Calculation copied from MyGuiBlueprintScreen_Reworked.CopyBlueprintPrefabToClipboard
             BoundingSphere boundingSphere = gridBuilder.CalculateBoundingSphere();
@@ -586,6 +587,7 @@ namespace ClientPlugin.Logic
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
             var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
+            MyEntities.RemapObjectBuilder(gridBuilder);
 
             if (!Cfg.RenameBlueprint)
             {
