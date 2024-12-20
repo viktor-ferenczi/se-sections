@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using VRage.Game;
 using VRageMath;
 
 namespace ClientPlugin.Logic
@@ -62,6 +65,21 @@ namespace ClientPlugin.Logic
                 bestUp,
                 Base6Directions.GetOppositeDirection(bestUp),
             };
+        }
+
+        public static Vector3I FindCorner(this HashSet<Vector3I> set)
+        {
+            if (set.Count == 0)
+                return Vector3I.Zero;
+
+            var floor = new Vector3I(
+                set.Min(v => v.X),
+                set.Min(v => v.Y),
+                set.Min(v => v.X)
+            );
+
+            // FIXME: Possibility of integer overflow should a grid be larger than 25800 along all 3 axis
+            return set.Select(v => v - floor).MinBy(v => Vector3I.Dot(v, v));
         }
     }
 }

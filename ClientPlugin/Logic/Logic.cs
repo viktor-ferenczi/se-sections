@@ -333,7 +333,7 @@ namespace ClientPlugin.Logic
         {
             if (aimedBlock == null)
                 return;
-            
+
             if (!box.Intersects(new BoundingBoxI(aimedBlock.Min, aimedBlock.Max)))
                 aimedBlock = null;
         }
@@ -612,18 +612,13 @@ namespace ClientPlugin.Logic
             var gridBuilder = (MyObjectBuilder_CubeGrid)grid.GetObjectBuilder();
             gridBuilder.CubeBlocks = gridBuilder.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)).ToList();
 
-            // Move the aimed block to the head, so it will be used to position the grid on pasting
-            if (gridBuilder.CubeBlocks.Count != 0 && aimedBlock != null && blockMinSet.Contains(aimedBlock.Min))
-            {
-                var aimedBlockIndex = gridBuilder.CubeBlocks
-                    .FindIndex(b => (Vector3I)b.Min == aimedBlock.Min);
-                if (aimedBlockIndex > 0)
-                {
-                    var aimedBlockBuilder = gridBuilder.CubeBlocks[aimedBlockIndex];
-                    gridBuilder.CubeBlocks.RemoveAt(aimedBlockIndex);
-                    gridBuilder.CubeBlocks.Insert(0, aimedBlockBuilder);
-                }
-            }
+            // Set the name, it will be the basis for saving the grid as a blueprint
+            var sizeText = GetSizeText("x");
+            gridBuilder.DisplayName = $"{gridBuilder.DisplayName} {sizeText}";
+
+            // Sanity check
+            if (gridBuilder.CubeBlocks.Count == 0)
+                return gridBuilder;
 
             // Strip down block groups to contain only the blocks preserved
             foreach (var group in gridBuilder.BlockGroups)
@@ -634,8 +629,19 @@ namespace ClientPlugin.Logic
             // Remove empty block groups
             gridBuilder.BlockGroups = gridBuilder.BlockGroups.Where(group => group.Blocks.Count != 0).ToList();
 
-            var sizeText = GetSizeText("x");
-            gridBuilder.DisplayName = $"{gridBuilder.DisplayName} {sizeText}";
+            // Choose an origin block to allow for intuitive pasting of the copied grid or blueprint
+            var originBlockMin = aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
+                ? aimedBlock.Min
+                : blockMinSet.FindCorner();
+            var originBlockIndex = gridBuilder.CubeBlocks
+                .FindIndex(b => (Vector3I)b.Min == originBlockMin);
+            if (originBlockIndex <= 0)
+                return gridBuilder;
+
+            // Move the block to the head of the cube list, that marks it as the origin one 
+            var originBlockBuilder = gridBuilder.CubeBlocks[originBlockIndex];
+            gridBuilder.CubeBlocks.RemoveAt(originBlockIndex);
+            gridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
 
             return gridBuilder;
         }
