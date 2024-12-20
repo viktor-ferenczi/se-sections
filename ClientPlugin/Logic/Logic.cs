@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using ClientPlugin.Gui;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.Engine.Physics;
@@ -71,10 +72,12 @@ namespace ClientPlugin.Logic
             SelectingSecond,
             Resizing,
             TakingScreenshot,
+            MovingThumbnail,
         }
 
         private State state;
         private MyCubeGrid grid;
+        private MySlimBlock aimedBlock;
         private MySlimBlock firstBlock;
         private MySlimBlock secondBlock;
         private BoundingBoxI box;
@@ -82,6 +85,8 @@ namespace ClientPlugin.Logic
         private string blueprintName;
         private string temporaryThumbnailPath;
         private string thumbnailPath;
+        private DateTime startedMovingThumbnail;
+        private int movingThumbnailProgress;
 
         public bool HandleGameInput()
         {
@@ -90,6 +95,8 @@ namespace ClientPlugin.Logic
                 Reset();
                 return false;
             }
+
+            aimedBlock = GetAimedBlock();
 
             var input = MyInput.Static;
             switch (state)
@@ -107,7 +114,11 @@ namespace ClientPlugin.Logic
                     return HandleResizing(input);
 
                 case State.TakingScreenshot:
-                    break;
+                    HandleTakingScreenshot();
+                    return false;
+
+                case State.MovingThumbnail:
+                    return HandleMovingThumbnail(input);
             }
 
             return false;
@@ -194,6 +205,8 @@ namespace ClientPlugin.Logic
 
         private bool HandleResizing(IMyInput input)
         {
+            EnsureAimedBlockIsInsideSelection();
+
             if (input.IsNewKeyPressed(MyKeys.Escape))
             {
                 Reset();
@@ -203,7 +216,7 @@ namespace ClientPlugin.Logic
             if (input.IsNewLeftMousePressed())
             {
                 var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
-                CopySectionToClipboard(includeIntersectingBlocks);
+                CopyToClipboard(includeIntersectingBlocks);
                 Reset();
                 return true;
             }
@@ -231,9 +244,7 @@ namespace ClientPlugin.Logic
 
             if (Cfg.SaveSelectedBlocks.IsPressed(input))
             {
-                SaveSectionToBlueprintFile(input.IsAnyCtrlKeyPressed());
-                TakeScreenshot();
-                state = State.TakingScreenshot;
+                SaveToBlueprintFile(input.IsAnyCtrlKeyPressed());
                 return true;
             }
 
@@ -294,6 +305,39 @@ namespace ClientPlugin.Logic
             return handled;
         }
 
+        private void HandleTakingScreenshot()
+        {
+            EnsureAimedBlockIsInsideSelection();
+            TakeScreenshot();
+        }
+
+        private bool HandleMovingThumbnail(IMyInput input)
+        {
+            if (AttemptMovingThumbnail())
+            {
+                Reset();
+                return true;
+            }
+
+            // Once progress is shown the operation is cancellable by the player
+            if (movingThumbnailProgress != 0 && input.IsNewKeyPressed(MyKeys.Escape))
+            {
+                Reset();
+                return true;
+            }
+
+            return false;
+        }
+
+        private void EnsureAimedBlockIsInsideSelection()
+        {
+            if (aimedBlock == null)
+                return;
+
+            if (!box.Intersects(new BoundingBoxI(aimedBlock.Min, aimedBlock.Max)))
+                aimedBlock = null;
+        }
+
         private void OnDeleteConfirmed(MyGuiScreenMessageBox.ResultEnum result, bool includeIntersectingBlocks)
         {
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
@@ -309,7 +353,7 @@ namespace ClientPlugin.Logic
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
 
-            CopySectionToClipboard(includeIntersectingBlocks);
+            CopyToClipboard(includeIntersectingBlocks);
             DeleteBlocks(includeIntersectingBlocks);
 
             Reset();
@@ -319,6 +363,7 @@ namespace ClientPlugin.Logic
         {
             state = State.Inactive;
             grid = null;
+            aimedBlock = null;
             firstBlock = null;
             secondBlock = null;
             box = BoundingBoxI.CreateInvalid();
@@ -326,6 +371,8 @@ namespace ClientPlugin.Logic
             blueprintName = null;
             temporaryThumbnailPath = null;
             thumbnailPath = null;
+            startedMovingThumbnail = DateTime.UtcNow;
+            movingThumbnailProgress = 0;
         }
 
         private MySlimBlock GetAimedBlock(MyCubeGrid requiredGrid = null)
@@ -420,13 +467,9 @@ namespace ClientPlugin.Logic
 
                 case State.Resizing:
                     MyCoordinateSystem.Static.Visible = false;
-                    if (Cfg.HighlightBlocks)
-                    {
-                        DrawBlock(firstBlock, Cfg.FirstColor);
-                        DrawBlock(secondBlock, Cfg.SecondColor);
-                    }
-
                     DrawBox(Cfg.FinalBoxColor);
+                    if (aimedBlock != null)
+                        DrawBlock(aimedBlock, Cfg.AimedColor);
                     DrawSize();
                     DrawHint("Block rotation keys: Grow", 1, x: -0.1f);
                     DrawHint("+SHIFT to shrink the box", 2, x: -0.1f);
@@ -441,6 +484,15 @@ namespace ClientPlugin.Logic
                 case State.TakingScreenshot:
                     MyCoordinateSystem.Static.Visible = false;
                     DrawBox(Cfg.FinalBoxColor);
+                    if (aimedBlock != null)
+                        DrawBlock(aimedBlock, Cfg.AimedColor);
+                    break;
+
+                case State.MovingThumbnail:
+                    if (movingThumbnailProgress == 0)
+                        break;
+                    var progressBar = new string('.', movingThumbnailProgress);
+                    DrawText($"Moving thumbnail{progressBar}", Cfg.HintColor, center: false, x: 0.40f, scale: 2f);
                     break;
             }
 
@@ -505,7 +557,7 @@ namespace ClientPlugin.Logic
             }
         }
 
-        private void CopySectionToClipboard(bool includeIntersectingBlocks)
+        private void CopyToClipboard(bool includeIntersectingBlocks)
         {
             var clipboard = MyClipboardComponent.Static?.Clipboard;
             if (clipboard == null)
@@ -531,9 +583,51 @@ namespace ClientPlugin.Logic
 
         private static string BlueprintSubdirPath => Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory);
 
-        private void SaveSectionToBlueprintFile(bool includeIntersectingBlocks)
+        private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
             var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
+
+            if (!Cfg.RenameBlueprint)
+            {
+                StoreBlueprint(gridBuilder);
+                return;
+            }
+
+            MyGuiSandbox.AddScreen(new NameDialog(
+                name =>
+                {
+                    gridBuilder.DisplayName = name;
+
+                    var blueprintPath = Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory, name);
+                    if (!Directory.Exists(blueprintPath))
+                    {
+                        StoreBlueprint(gridBuilder);
+                        return;
+                    }
+
+                    MyGuiSandbox.AddScreen(
+                        MyGuiSandbox.CreateMessageBox(buttonType: MyMessageBoxButtonsType.YES_NO,
+                            messageText: new StringBuilder($"Are you sure to overwrite this blueprint?\r\n\r\n{name}"),
+                            messageCaption: new StringBuilder("Confirmation"),
+                            callback: result =>
+                            {
+                                if (result != MyGuiScreenMessageBox.ResultEnum.YES)
+                                    return;
+
+                                StoreBlueprint(gridBuilder);
+                            }));
+                },
+                "Save as local blueprint",
+                gridBuilder.DisplayName,
+                moveCursorToEnd: true));
+        }
+
+        private void StoreBlueprint(MyObjectBuilder_CubeGrid gridBuilder)
+        {
+            blueprintName = gridBuilder.DisplayName;
+
+            // Clear the world position, so it is not exposed in multiplayer if the blueprint is shared.
+            // The orientation is ignored on pasting, therefore it can be cleared as well.
             gridBuilder.PositionAndOrientation = MyPositionAndOrientation.Default;
 
             var blueprint = new MyObjectBuilder_ShipBlueprintDefinition();
@@ -543,9 +637,10 @@ namespace ClientPlugin.Logic
             var definition = new MyObjectBuilder_Definitions();
             definition.ShipBlueprints = new[] { blueprint };
 
-            blueprintName = gridBuilder.DisplayName;
             Directory.CreateDirectory(BlueprintSubdirPath);
-            MyBlueprintUtils.SavePrefabToFile(definition, blueprintName, Cfg.SectionsSubdirectory, replace: false);
+            MyBlueprintUtils.SavePrefabToFile(definition, gridBuilder.DisplayName, Cfg.SectionsSubdirectory, replace: Cfg.RenameBlueprint);
+
+            state = State.TakingScreenshot;
         }
 
         private MyObjectBuilder_CubeGrid CreateGridBuilder(bool includeIntersectingBlocks)
@@ -557,6 +652,14 @@ namespace ClientPlugin.Logic
             var gridBuilder = (MyObjectBuilder_CubeGrid)grid.GetObjectBuilder();
             gridBuilder.CubeBlocks = gridBuilder.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)).ToList();
 
+            // Set the name, it will be the basis for saving the grid as a blueprint
+            var sizeText = GetSizeText("x");
+            gridBuilder.DisplayName = $"{gridBuilder.DisplayName} {sizeText}";
+
+            // Sanity check
+            if (gridBuilder.CubeBlocks.Count == 0)
+                return gridBuilder;
+
             // Strip down block groups to contain only the blocks preserved
             foreach (var group in gridBuilder.BlockGroups)
             {
@@ -566,8 +669,19 @@ namespace ClientPlugin.Logic
             // Remove empty block groups
             gridBuilder.BlockGroups = gridBuilder.BlockGroups.Where(group => group.Blocks.Count != 0).ToList();
 
-            var sizeText = GetSizeText("x");
-            gridBuilder.DisplayName = $"{gridBuilder.DisplayName} {sizeText}";
+            // Choose an origin block to allow for intuitive pasting of the copied grid or blueprint
+            var originBlockMin = aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
+                ? aimedBlock.Min
+                : blockMinSet.FindCorner();
+            var originBlockIndex = gridBuilder.CubeBlocks
+                .FindIndex(b => (Vector3I)b.Min == originBlockMin);
+            if (originBlockIndex <= 0)
+                return gridBuilder;
+
+            // Move the block to the head of the cube list, that marks it as the origin one 
+            var originBlockBuilder = gridBuilder.CubeBlocks[originBlockIndex];
+            gridBuilder.CubeBlocks.RemoveAt(originBlockIndex);
+            gridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
 
             return gridBuilder;
         }
@@ -589,7 +703,6 @@ namespace ClientPlugin.Logic
             Debug.Assert(!string.IsNullOrEmpty(blueprintName));
 
             // Logic copied from MyGuiBlueprintScreen_Reworked.TakeScreenshotLocalBP
-            temporaryThumbnailPath = Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, BlueprintSubdirPath, grid.DisplayName, MyBlueprintUtils.THUMB_IMAGE_NAME + ".draft");
             float num = MyRenderProxy.MainViewport.Width / MyRenderProxy.MainViewport.Height;
             float num2 = (float)Math.Sqrt(262140f / num);
             Vector2 vector = new Vector2(num2 * num, num2);
@@ -610,6 +723,7 @@ namespace ClientPlugin.Logic
                 eventHandlerRegistered = true;
             }
 
+            temporaryThumbnailPath = Path.Combine(Constants.LocalTempDir, $"{MyBlueprintUtils.THUMB_IMAGE_NAME}.{Guid.NewGuid()}.png");
             MyRenderProxy.TakeScreenshot(sizeMultiplier, temporaryThumbnailPath, debug: false, ignoreSprites: true, showNotification: false);
         }
 
@@ -630,10 +744,44 @@ namespace ClientPlugin.Logic
             if (state != State.TakingScreenshot)
                 return;
 
-            if (thumbnailPath != null && thumbnailPath != temporaryThumbnailPath)
-                File.Move(temporaryThumbnailPath, thumbnailPath);
+            startedMovingThumbnail = DateTime.UtcNow;
+            state = State.MovingThumbnail;
+        }
 
-            Reset();
+        private bool AttemptMovingThumbnail()
+        {
+            Debug.Assert(temporaryThumbnailPath != null);
+            Debug.Assert(thumbnailPath != null);
+
+            var elapsed = (DateTime.UtcNow - startedMovingThumbnail).TotalSeconds;
+            movingThumbnailProgress = elapsed >= 1.5 ? (int)(1.5 * elapsed) : 0;
+
+            if (elapsed > 5.0)
+            {
+                MyLog.Default.Warning($"{Plugin.Name}: Failed to move thumbnail file: {temporaryThumbnailPath} => {thumbnailPath}");
+                return true;
+            }
+
+            if (!File.Exists(temporaryThumbnailPath))
+            {
+                // Wait for the file
+                return false;
+            }
+
+            try
+            {
+                if (File.Exists(thumbnailPath))
+                    File.Delete(thumbnailPath);
+
+                File.Move(temporaryThumbnailPath, thumbnailPath);
+            }
+            catch (IOException)
+            {
+                // Wait for the file being released (not locked by screenshot saving, antivirus, whatever)
+                return false;
+            }
+
+            return true;
         }
     }
 }

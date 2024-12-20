@@ -490,11 +490,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Gui\NameDialog.cs" />
+    <Compile Include="Logic\Constants.cs" />
     <Compile Include="Logic\Extensions.cs" />
     <Compile Include="Logic\Logic.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Patches\MyBlueprintUtilsPatch.cs" />
     <Compile Include="Patches\MyCubeBuilderPatch.cs" />
+    <Compile Include="Patches\MyGridClipboardPatch.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\Elements\Button.cs" />

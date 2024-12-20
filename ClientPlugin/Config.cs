@@ -20,12 +20,14 @@ namespace ClientPlugin
         private string sectionsSubdirectory = "Sections";
         private bool deleteConfirmation = true;
         private bool cutConfirmation = true;
+        private bool fixPastePosition = true;
+        private bool renameBlueprint = true;
         private bool showHints = true;
         private bool showSize = true;
-        private bool highlightBlocks = false;
         private int highlightDensity = 3;
         private Color firstColor = Color.Blue;
         private Color secondColor = Color.Green;
+        private Color aimedColor = Color.Blue;
         private Color boxColor = Color.Cyan;
         private Color finalBoxColor = Color.Yellow;
         private float textPosition = 0.70f;
@@ -66,6 +68,20 @@ namespace ClientPlugin
             set => SetField(ref cutConfirmation, value);
         }
 
+        [Checkbox(description: "Fixes the drag position on pasting grids, so you can point directly where the origin block should go")]
+        public bool FixPastePosition
+        {
+            get => fixPastePosition;
+            set => SetField(ref fixPastePosition, value);
+        }
+
+        [Checkbox(description: "Opens a dialog box to rename the blueprint on saving and confirm overwrite (disables automatic numbering)")]
+        public bool RenameBlueprint
+        {
+            get => renameBlueprint;
+            set => SetField(ref renameBlueprint, value);
+        }
+
         [Checkbox(description: "Enable showing the hints on screen")]
         public bool ShowHints
         {
@@ -78,13 +94,6 @@ namespace ClientPlugin
         {
             get => showSize;
             set => SetField(ref showSize, value);
-        }
-
-        [Checkbox(description: "Highlight the first and second blocks in the selection box resizing state")]
-        public bool HighlightBlocks
-        {
-            get => highlightBlocks;
-            set => SetField(ref highlightBlocks, value);
         }
 
         [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
@@ -106,6 +115,13 @@ namespace ClientPlugin
         {
             get => secondColor;
             set => SetField(ref secondColor, value);
+        }
+
+        [Color(description: "Highlight color of the aimed block for blueprinting")]
+        public Color AimedColor
+        {
+            get => aimedColor;
+            set => SetField(ref aimedColor, value);
         }
 
         [Color(description: "Highlight color of the selection box while picking the second block")]
