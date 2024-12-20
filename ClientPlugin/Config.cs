@@ -21,6 +21,7 @@ namespace ClientPlugin
         private bool deleteConfirmation = true;
         private bool cutConfirmation = true;
         private bool fixPastePosition = true;
+        private bool renameBlueprint = true;
         private bool showHints = true;
         private bool showSize = true;
         private int highlightDensity = 3;
@@ -72,6 +73,13 @@ namespace ClientPlugin
         {
             get => fixPastePosition;
             set => SetField(ref fixPastePosition, value);
+        }
+
+        [Checkbox(description: "Opens a dialog box to rename the blueprint on saving and confirm overwrite (disables automatic numbering)")]
+        public bool RenameBlueprint
+        {
+            get => renameBlueprint;
+            set => SetField(ref renameBlueprint, value);
         }
 
         [Checkbox(description: "Enable showing the hints on screen")]

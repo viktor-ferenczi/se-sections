@@ -69,7 +69,7 @@ Once the selection is good, you can do these operations on the selected blocks:
 - **Left mouse button**: Copy the section to the clipboard, so it can be pasted elsewhere.
 - **Right mouse button**: Cut the section (copy, then delete), so it can be moved elsewhere.
 - **Backspace key**: Delete the blocks in the section. It may result in a grid split, so careful.
-- **Enter key**: Make a blueprint out of the blocks inside the section. They will be stored locally in the `Sections` blueprint folder.
+- **Enter key**: Make a blueprint out of the blocks inside the section. They will be stored locally in the `Sections` blueprint folder. You can name the blueprint on saving and confirm a possible overwrite.
 
 By default, only the blocks fully enclosed in the selection box are operated on.
 
@@ -93,7 +93,7 @@ The numbering works exactly the same way as saving blueprints with Ctrl-B.
 
 The sections have thumbnails generated from a screenshot taken when the section
 is saved. Position your character to have a good view before saving the section,
-if possible. If not, then you can make a new screenshot in the blueprints dialog.
+if possible. If not, then you can make a new screenshot in the Blueprints dialog.
 ![Blueprints dialog](doc/BlueprintsDialog.png "Blueprints dialog")
 ![Section thumbnail](doc/SectionThumbnail.png "Section thumbnail")
 
@@ -148,7 +148,7 @@ Space Engineers and Space Engineers 2 are trademarks of Keen Software House s.r.
 - [SE Mods Discord](https://discord.gg/PYPFPGf3Ca) FAQ, Troubleshooting, Support, Bug Reports, Discussion
 - [Plugin Loader Discord](https://discord.gg/6ETGRU3CzR) Everything about plugins
 - [YouTube Channel](https://www.youtube.com/channel/UCc5ar3cW9qoOgdBb1FM_rxQ)
-- [Source code](https://github.com/viktor-ferenczi/toolbar-manager)
+- [Source code](https://github.com/viktor-ferenczi/se-sections)
 - [Bug reports](https://discord.gg/x3Z8Ug5YkQ)
 
 ## Credits

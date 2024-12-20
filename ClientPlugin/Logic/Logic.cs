@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using ClientPlugin.Gui;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.Engine.Physics;
@@ -244,7 +245,6 @@ namespace ClientPlugin.Logic
             if (Cfg.SaveSelectedBlocks.IsPressed(input))
             {
                 SaveToBlueprintFile(input.IsAnyCtrlKeyPressed());
-                state = State.TakingScreenshot;
                 return true;
             }
 
@@ -587,6 +587,45 @@ namespace ClientPlugin.Logic
         {
             var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
 
+            if (!Cfg.RenameBlueprint)
+            {
+                StoreBlueprint(gridBuilder);
+                return;
+            }
+
+            MyGuiSandbox.AddScreen(new NameDialog(
+                name =>
+                {
+                    gridBuilder.DisplayName = name;
+
+                    var blueprintPath = Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory, name);
+                    if (!Directory.Exists(blueprintPath))
+                    {
+                        StoreBlueprint(gridBuilder);
+                        return;
+                    }
+
+                    MyGuiSandbox.AddScreen(
+                        MyGuiSandbox.CreateMessageBox(buttonType: MyMessageBoxButtonsType.YES_NO,
+                            messageText: new StringBuilder($"Are you sure to overwrite this blueprint?\r\n\r\n{name}"),
+                            messageCaption: new StringBuilder("Confirmation"),
+                            callback: result =>
+                            {
+                                if (result != MyGuiScreenMessageBox.ResultEnum.YES)
+                                    return;
+
+                                StoreBlueprint(gridBuilder);
+                            }));
+                },
+                "Save as local blueprint",
+                gridBuilder.DisplayName,
+                moveCursorToEnd: true));
+        }
+
+        private void StoreBlueprint(MyObjectBuilder_CubeGrid gridBuilder)
+        {
+            blueprintName = gridBuilder.DisplayName;
+
             // Clear the world position, so it is not exposed in multiplayer if the blueprint is shared.
             // The orientation is ignored on pasting, therefore it can be cleared as well.
             gridBuilder.PositionAndOrientation = MyPositionAndOrientation.Default;
@@ -598,9 +637,10 @@ namespace ClientPlugin.Logic
             var definition = new MyObjectBuilder_Definitions();
             definition.ShipBlueprints = new[] { blueprint };
 
-            blueprintName = gridBuilder.DisplayName;
             Directory.CreateDirectory(BlueprintSubdirPath);
-            MyBlueprintUtils.SavePrefabToFile(definition, blueprintName, Cfg.SectionsSubdirectory);
+            MyBlueprintUtils.SavePrefabToFile(definition, gridBuilder.DisplayName, Cfg.SectionsSubdirectory, replace: Cfg.RenameBlueprint);
+
+            state = State.TakingScreenshot;
         }
 
         private MyObjectBuilder_CubeGrid CreateGridBuilder(bool includeIntersectingBlocks)
@@ -730,6 +770,9 @@ namespace ClientPlugin.Logic
 
             try
             {
+                if (File.Exists(thumbnailPath))
+                    File.Delete(thumbnailPath);
+
                 File.Move(temporaryThumbnailPath, thumbnailPath);
             }
             catch (IOException)
