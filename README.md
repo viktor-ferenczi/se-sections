@@ -97,6 +97,26 @@ if possible. If not, then you can make a new screenshot in the blueprints dialog
 ![Blueprints dialog](doc/BlueprintsDialog.png "Blueprints dialog")
 ![Section thumbnail](doc/SectionThumbnail.png "Section thumbnail")
 
+### Pasting sections
+
+The vanilla game sets the drag point of pasted blueprints to the center of their bounding sphere.
+Not to mention, this is very suboptimal for sections, because it works well only if you try to
+align a block near the center of the blueprint.
+
+For example, let's consider this corner girder section. 
+Notice the blue cube at the far corner, that's the origin block faced while making the blueprint.
+That's why it is at the dead center of the blueprint's thumbnail:
+![Corner girder section](doc/CornerGirderSection.png "Corner girder section")
+
+If you're trying to paste it on top of the other corner in the vanilla game, 
+then it is impossible to align properly:
+![Unable to align](doc/UnableToAlign.png "Unable to align")
+
+With the fix implemented in this plugin you can just face where the origin block should go:
+![Able to align](doc/AbleToAlign.png "Unable to align")
+
+Certainly you have to make sure first, that the rotation is right, but that's already second nature...
+
 ## Configuration
 
 Press `Ctrl-Alt-/` while in-game and not in the GUI. It will open the list of

@@ -20,6 +20,7 @@ namespace ClientPlugin
         private string sectionsSubdirectory = "Sections";
         private bool deleteConfirmation = true;
         private bool cutConfirmation = true;
+        private bool fixPastePosition = true;
         private bool showHints = true;
         private bool showSize = true;
         private int highlightDensity = 3;
@@ -64,6 +65,13 @@ namespace ClientPlugin
         {
             get => cutConfirmation;
             set => SetField(ref cutConfirmation, value);
+        }
+
+        [Checkbox(description: "Fixes the drag position on pasting grids, so you can point directly where the origin block should go")]
+        public bool FixPastePosition
+        {
+            get => fixPastePosition;
+            set => SetField(ref fixPastePosition, value);
         }
 
         [Checkbox(description: "Enable showing the hints on screen")]
