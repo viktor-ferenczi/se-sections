@@ -22,6 +22,7 @@ namespace ClientPlugin
         private bool fixPastePosition = true;
         private bool renameBlueprint = true;
         private bool handleSubgrids = true;
+        private bool restoreToolbars = true;
         private bool showHints = true;
         private bool showSize = true;
         private int highlightDensity = 3;
@@ -89,6 +90,13 @@ namespace ClientPlugin
         {
             get => handleSubgrids;
             set => SetField(ref handleSubgrids, value);
+        }
+
+        [Checkbox(description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)")]
+        public bool RestoreToolbars
+        {
+            get => restoreToolbars;
+            set => SetField(ref restoreToolbars, value);
         }
 
         [Checkbox(description: "Enable showing the hints on screen")]
