@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using Sandbox;
 using Sandbox.Engine.Physics;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.GameSystems.CoordinateSystem;
 using Sandbox.Game.Gui;
@@ -216,7 +218,7 @@ namespace ClientPlugin.Logic
             if (input.IsNewLeftMousePressed())
             {
                 var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
-                CopyToClipboard(includeIntersectingBlocks);
+                Execute(Operation.Copy, includeIntersectingBlocks);
                 Reset();
                 return true;
             }
@@ -343,9 +345,15 @@ namespace ClientPlugin.Logic
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
 
-            DeleteBlocks(includeIntersectingBlocks);
-
+            Execute(Operation.Delete, includeIntersectingBlocks);
             Reset();
+        }
+
+        private enum Operation
+        {
+            Copy,
+            Cut,
+            Delete,
         }
 
         private void OnCutConfirmed(MyGuiScreenMessageBox.ResultEnum result, bool includeIntersectingBlocks)
@@ -353,8 +361,7 @@ namespace ClientPlugin.Logic
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
 
-            CopyToClipboard(includeIntersectingBlocks);
-            DeleteBlocks(includeIntersectingBlocks);
+            Execute(Operation.Cut, includeIntersectingBlocks);
 
             Reset();
         }
@@ -394,18 +401,6 @@ namespace ClientPlugin.Logic
         {
             box = new BoundingBoxI(Vector3I.Min(firstBlock.Min, secondBlock.Min), Vector3I.Max(firstBlock.Max, secondBlock.Max));
             originalBox = box;
-        }
-
-        private void DeleteBlocks(bool includeIntersectingBlocks)
-        {
-            var blockMinSet = CollectMinOfBlocksInBox(includeIntersectingBlocks);
-
-            foreach (var min in blockMinSet)
-            {
-                grid.RemoveBlock(grid.GetCubeBlock(min), true);
-            }
-
-            grid.Physics.AddDirtyArea(box.Min, box.Max);
         }
 
         public bool DrawPrefix(MyCubeBuilder cubeBuilder)
@@ -557,18 +552,40 @@ namespace ClientPlugin.Logic
             }
         }
 
-        private void CopyToClipboard(bool includeIntersectingBlocks)
+        private void Execute(Operation operation, bool includeIntersectingBlocks)
+        {
+            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            if (gridBuilders.Count == 0)
+                return;
+
+            switch (operation)
+            {
+                case Operation.Copy:
+                    CopyToClipboard(gridBuilders);
+                    break;
+
+                case Operation.Cut:
+                    CopyToClipboard(gridBuilders);
+                    DeleteBlocks(blockMinPositions);
+                    DeleteGrids(subgrids);
+                    break;
+
+                case Operation.Delete:
+                    DeleteBlocks(blockMinPositions);
+                    DeleteGrids(subgrids);
+                    break;
+            }
+        }
+
+        private static void CopyToClipboard(List<MyObjectBuilder_CubeGrid> gridBuilders)
         {
             var clipboard = MyClipboardComponent.Static?.Clipboard;
             if (clipboard == null)
                 return;
 
-            var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
-            MyEntities.RemapObjectBuilder(gridBuilder);
-
             // Calculation copied from MyGuiBlueprintScreen_Reworked.CopyBlueprintPrefabToClipboard
-            BoundingSphere boundingSphere = gridBuilder.CalculateBoundingSphere();
-            MyPositionAndOrientation value = gridBuilder.PositionAndOrientation.Value;
+            BoundingSphere boundingSphere = gridBuilders[0].CalculateBoundingSphere();
+            MyPositionAndOrientation value = gridBuilders[0].PositionAndOrientation.Value;
             MatrixD m = MatrixD.CreateWorld(value.Position, value.Forward, value.Up);
             MatrixD m2 = MatrixD.Invert(m);
             Matrix matrix = Matrix.Normalize(m2);
@@ -576,34 +593,53 @@ namespace ClientPlugin.Logic
             Vector3 dragPointDelta = Vector3.TransformNormal((Vector3)(Vector3D)value.Position - boundingSphere2.Center, matrix);
             float dragVectorLength = boundingSphere.Radius + 10f;
 
-            clipboard.SetGridFromBuilder(gridBuilder, dragPointDelta, dragVectorLength);
+            clipboard.SetGridFromBuilders(gridBuilders.ToArray(), dragPointDelta, dragVectorLength);
             clipboard.ShowModdedBlocksWarning = false;
 
             MyClipboardComponent.Static.Paste();
+        }
+
+        private void DeleteBlocks(HashSet<Vector3I> blockMinPositions)
+        {
+            foreach (var min in blockMinPositions)
+            {
+                grid.RemoveBlock(grid.GetCubeBlock(min), true);
+            }
+
+            grid.Physics.AddDirtyArea(box.Min, box.Max);
+        }
+
+        private void DeleteGrids(HashSet<MyCubeGrid> subgrids)
+        {
+            foreach (var subgrid in subgrids)
+            {
+                subgrid.Close();
+            }
         }
 
         private static string BlueprintSubdirPath => Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory);
 
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
-            var gridBuilder = CreateGridBuilder(includeIntersectingBlocks);
-            MyEntities.RemapObjectBuilder(gridBuilder);
+            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            if (gridBuilders.Count == 0)
+                return;
 
             if (!Cfg.RenameBlueprint)
             {
-                StoreBlueprint(gridBuilder);
+                StoreBlueprint(gridBuilders);
                 return;
             }
 
             MyGuiSandbox.AddScreen(new NameDialog(
                 name =>
                 {
-                    gridBuilder.DisplayName = name;
+                    gridBuilders[0].DisplayName = name;
 
                     var blueprintPath = Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory, name);
                     if (!Directory.Exists(blueprintPath))
                     {
-                        StoreBlueprint(gridBuilder);
+                        StoreBlueprint(gridBuilders);
                         return;
                     }
 
@@ -616,40 +652,97 @@ namespace ClientPlugin.Logic
                                 if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                                     return;
 
-                                StoreBlueprint(gridBuilder);
+                                StoreBlueprint(gridBuilders);
                             }));
                 },
                 "Save as local blueprint",
-                gridBuilder.DisplayName,
+                gridBuilders[0].DisplayName,
                 moveCursorToEnd: true));
         }
 
-        private void StoreBlueprint(MyObjectBuilder_CubeGrid gridBuilder)
+        private void StoreBlueprint(List<MyObjectBuilder_CubeGrid> gridBuilders)
         {
-            blueprintName = gridBuilder.DisplayName;
+            blueprintName = gridBuilders[0].DisplayName;
 
-            // Clear the world position, so it is not exposed in multiplayer if the blueprint is shared.
+            // Zero out the world position, so it is not exposed in multiplayer if the blueprint is shared.
             // The orientation is ignored on pasting, therefore it can be cleared as well.
-            gridBuilder.PositionAndOrientation = MyPositionAndOrientation.Default;
+            gridBuilders.CensorWorldPosition();
 
             var blueprint = new MyObjectBuilder_ShipBlueprintDefinition();
-            blueprint.DisplayName = gridBuilder.DisplayName;
-            blueprint.CubeGrids = new[] { gridBuilder };
+            blueprint.DisplayName = blueprintName;
+            blueprint.CubeGrids = gridBuilders.ToArray();
 
             var definition = new MyObjectBuilder_Definitions();
             definition.ShipBlueprints = new[] { blueprint };
 
             Directory.CreateDirectory(BlueprintSubdirPath);
-            MyBlueprintUtils.SavePrefabToFile(definition, gridBuilder.DisplayName, Cfg.SectionsSubdirectory, replace: Cfg.RenameBlueprint);
+            MyBlueprintUtils.SavePrefabToFile(definition, blueprintName, Cfg.SectionsSubdirectory, replace: Cfg.RenameBlueprint);
 
             state = State.TakingScreenshot;
         }
 
-        private MyObjectBuilder_CubeGrid CreateGridBuilder(bool includeIntersectingBlocks)
+        private List<MyObjectBuilder_CubeGrid> CreateGridBuilders(bool includeIntersectingBlocks, out HashSet<Vector3I> blockMinPositions, out HashSet<MyCubeGrid> subgrids)
         {
+            // Collect all mechanical connections inside the mechanical group
+            var mechanicalConnections = new MechanicalConnections(grid);
+
             // Collect the Min coordinates of blocks considered to be inside the selection
             var blockMinSet = CollectMinOfBlocksInBox(includeIntersectingBlocks);
+            blockMinPositions = blockMinSet;
 
+            // Delete mechanical connections where the base or the top block is in the selection
+            mechanicalConnections.RemoveConnections(grid.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)));
+
+            // Any grid which becomes unreachable from the main grid must be copied together with the selected blocks
+            subgrids = Cfg.HandleSubgrids ? mechanicalConnections.FindUnreachableSubgrids(grid) : new HashSet<MyCubeGrid>();
+
+            // Create the grid builders
+            var mainGridBuilder = CreateMainGridBuilder(blockMinSet);
+            var gridBuilders = new List<MyObjectBuilder_CubeGrid>(1 + subgrids.Count) { mainGridBuilder };
+            gridBuilders.AddRange(subgrids.Select(subgrid => (MyObjectBuilder_CubeGrid)subgrid.GetObjectBuilder()));
+
+            // Remap EntityIds to avoid duplicates on pasting.
+            // It will disconnect all block toolbar slot and EC/TC block list entry connections between
+            // the copied blocks (and subgrids) with the remaining blocks (and subgrids).
+            // This is why we need a mechanism to store these connections,
+            // so these connections can be restored on pasting those blocks (and subgrids) back. 
+            MyEntities.RemapObjectBuilderCollection(gridBuilders);
+
+            // Sanity check
+            if (mainGridBuilder.CubeBlocks.Count == 0)
+                return gridBuilders;
+
+            // Choose an origin block on the main grid to allow for intuitive pasting of the copied grid or blueprint
+            var originBlockMin = aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
+                ? aimedBlock.Min
+                : blockMinSet.FindCorner();
+            var originBlockIndex = mainGridBuilder.CubeBlocks
+                .FindIndex(b => (Vector3I)b.Min == originBlockMin);
+            if (originBlockIndex > 0)
+            {
+                // Move the block to the head of the cube list, that marks it as the origin one 
+                var originBlockBuilder = mainGridBuilder.CubeBlocks[originBlockIndex];
+                mainGridBuilder.CubeBlocks.RemoveAt(originBlockIndex);
+                mainGridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
+            }
+
+            return gridBuilders;
+        }
+
+        private HashSet<Vector3I> CollectMinOfBlocksInBox(bool includeIntersectingBlocks)
+        {
+            return grid.CubeBlocks
+                .Where(block =>
+                    includeIntersectingBlocks
+                        ? box.Intersects(new BoundingBoxI(block.Min, block.Max))
+                        : box.Contains(block.Min) == ContainmentType.Contains &&
+                          box.Contains(block.Max) == ContainmentType.Contains)
+                .Select(block => block.Min)
+                .ToHashSet();
+        }
+
+        private MyObjectBuilder_CubeGrid CreateMainGridBuilder(HashSet<Vector3I> blockMinSet)
+        {
             // Keep only the blocks in selection by their Min coordinates
             var gridBuilder = (MyObjectBuilder_CubeGrid)grid.GetObjectBuilder();
             gridBuilder.CubeBlocks = gridBuilder.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)).ToList();
@@ -686,18 +779,6 @@ namespace ClientPlugin.Logic
             gridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
 
             return gridBuilder;
-        }
-
-        private HashSet<Vector3I> CollectMinOfBlocksInBox(bool includeIntersectingBlocks)
-        {
-            return grid.CubeBlocks
-                .Where(block =>
-                    includeIntersectingBlocks
-                        ? box.Intersects(new BoundingBoxI(block.Min, block.Max))
-                        : box.Contains(block.Min) == ContainmentType.Contains &&
-                          box.Contains(block.Max) == ContainmentType.Contains)
-                .Select(block => block.Min)
-                .ToHashSet();
         }
 
         private void TakeScreenshot()

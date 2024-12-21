@@ -76,6 +76,33 @@ By default, only the blocks fully enclosed in the selection box are operated on.
 You can hold down the **Ctrl** key while using the above section operations to include
 the blocks intersecting the surface of the selection box without being fully contained.
 
+### Subgrid support
+
+Any **subgrids** which would be orphaned if the selected blocks would be deleted are copied
+together with the section. This allows for cutting out custom PDCs and other mechanical
+constructs using subgrids without disconnecting the mechanical bases from their tops,
+so they can also be pasted back into the same grid.
+
+Notice how the custom PDCs were cut out together with their base:
+![PDC cut out](doc/PDCCutOut.png "PDC cut out")
+
+The same applies to saving to a section blueprint:
+![PDC selection](doc/PDC-Selection.png "PDC selection")
+
+Pasted the blueprint into clear space. As you can see both PDCs are preserved:
+![PDC pasted](doc/PDC-Pasted.png "PDC pasted")
+
+Please note, that the selection box must cover only the mechanical base or top blocks
+connecting the subgrids. The selection box does **not** have to cover the subgrids
+themselves, because the selection applies only to blocks on the same grid as the
+first selected block.
+
+Any subgraph of subgrids are also copied the same way, as long as they lose all
+mechanical connections to the main grid which was selected. It ensures that no subgrid
+is lost. It should work in any combination of mechanical connections, including reverse
+order ones (which cannot be built directly in the game, only "towed" together) and
+multiple connections between the same pair of subgrids (like double hinged PDCs or doors).
+
 ### Managing saved sections
 
 You can paste your saved sections efficiently using the existing blueprint functionality.
@@ -128,11 +155,11 @@ The configuration can be changed anytime without having to restart the game.
 
 ## Known issues and limitations
 
-- **Subgrids are not copied**, they're left behind, currently. It is a known issue and may be solved later.
-- **Blocks assigned to any toolbars** (cockpits, timers, etc) **or added to Event/Turret Controller block lists get disconnected** if they end up on separate grids. It may be solved later, this is a non-trivial known issue with grid splits.
+- **Blocks assigned to any toolbars** (cockpits, timers, etc) **or added to Event/Turret Controller block lists get disconnected** if they end up on separate grids. **I plan to solve this issue in a straighforward way. Stay tuned!**
 - The **selection box** can cover blocks and operate only on a **single grid**. This is normal and likely won't change.
-- Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. Play with it!
-- This plugin is largely untested in survival (only with creative mode tools enabled) and is disabled in multiplayer (even if you're an admin). It should work if you're playing on the server of a "Friends" multiplayer game, but this mode has note been tested.
+- Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. **Play with it!**
+- This plugin is **largely untested in survival** (only with creative mode tools enabled) and is disabled in multiplayer (even if you're an admin). It should work if you're playing on the server of a "Friends" multiplayer game, but this mode has **not** been tested yet.
+- **Pasting sections may be blocked by subgrids in the way**, even if the hitboxes of actual blocks would not collide. **There will be an override key to turn this check off during pasting. Stay tuned!** 
 
 ## Troubleshooting
 

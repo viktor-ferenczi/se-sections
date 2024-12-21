@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using VRage;
 using VRage.Game;
 using VRageMath;
 
@@ -79,7 +80,28 @@ namespace ClientPlugin.Logic
             );
 
             // FIXME: Possibility of integer overflow should a grid be larger than 25800 along all 3 axis
-            return set.Select(v => v - floor).MinBy(v => Vector3I.Dot(v, v));
+            return set.Select(v => v - floor).MinBy(v => Vector3I.Dot(v, v)) + floor;
         }
+        
+        public static void CensorWorldPosition(this IReadOnlyCollection<MyObjectBuilder_CubeGrid> gridBuilders)
+        {
+            if (gridBuilders == null || gridBuilders.Count == 0)
+                return;
+
+            var maybeMainGridPO = gridBuilders.First().PositionAndOrientation;
+            if (!maybeMainGridPO.HasValue)
+                return;
+
+            var mainGridPosition = (Vector3D) maybeMainGridPO.Value.Position;
+
+            foreach (var gridBuilder in gridBuilders)
+            {
+                if (!gridBuilder.PositionAndOrientation.HasValue)
+                    continue;
+
+                var gridPO = gridBuilder.PositionAndOrientation.Value;
+                gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(gridPO.Position - mainGridPosition, gridPO.Forward, gridPO.Up);
+            }
+        }        
     }
 }

@@ -21,6 +21,7 @@ namespace ClientPlugin
         private bool cutConfirmation = true;
         private bool fixPastePosition = true;
         private bool renameBlueprint = true;
+        private bool handleSubgrids = true;
         private bool showHints = true;
         private bool showSize = true;
         private int highlightDensity = 3;
@@ -81,6 +82,13 @@ namespace ClientPlugin
         {
             get => renameBlueprint;
             set => SetField(ref renameBlueprint, value);
+        }
+
+        [Checkbox(description: "Handle subgrids together with mechanical connection blocks")]
+        public bool HandleSubgrids
+        {
+            get => handleSubgrids;
+            set => SetField(ref handleSubgrids, value);
         }
 
         [Checkbox(description: "Enable showing the hints on screen")]
