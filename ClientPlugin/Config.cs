@@ -23,6 +23,7 @@ namespace ClientPlugin
         private bool fixPastePosition = true;
         private bool handleSubgrids = true;
         private bool disablePlacementTest = true;
+        private bool restoreToolbars = true;
 
         private bool showHints = true;
         private bool showSize = true;
@@ -105,6 +106,13 @@ namespace ClientPlugin
         {
             get => disablePlacementTest;
             set => SetField(ref disablePlacementTest, value);
+        }
+
+        [Checkbox(description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)")]
+        public bool RestoreToolbars
+        {
+            get => restoreToolbars;
+            set => SetField(ref restoreToolbars, value);
         }
 
         [Separator("Overlay")]
