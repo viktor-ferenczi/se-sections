@@ -126,12 +126,13 @@ The configuration can be changed anytime without having to restart the game.
 
 ![Configuration](doc/ConfigDialog.png "Config Dialog")
 
-## Limitations
+## Known issues and limitations
 
-- The selection box can cover blocks and operate only on a single grid.
-- Sections can store blocks from a single grid only (without subgrids).
-- Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks.
-- The plugin is largely untested in survival and should **not** be used in multiplayer.
+- **Subgrids are not copied**, they're left behind, currently. It is a known issue and may be solved later.
+- **Blocks assigned to any toolbars** (cockpits, timers, etc) **or added to Event/Turret Controller block lists get disconnected** if they end up on separate grids. It may be solved later, this is a non-trivial known issue with grid splits.
+- The **selection box** can cover blocks and operate only on a **single grid**. This is normal and likely won't change.
+- Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. Play with it!
+- This plugin is largely untested in survival (only with creative mode tools enabled) and is disabled in multiplayer (even if you're an admin). It should work if you're playing on the server of a "Friends" multiplayer game, but this mode has note been tested.
 
 ## Troubleshooting
 
