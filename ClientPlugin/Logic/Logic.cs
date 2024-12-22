@@ -10,6 +10,7 @@ using ClientPlugin.Gui;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.Engine.Physics;
+using Sandbox.Engine.Utils;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
@@ -142,6 +143,15 @@ namespace ClientPlugin.Logic
             return false;
         }
 
+        private bool HasClipboardContent()
+        {
+            var clipboard = MyClipboardComponent.Static?.Clipboard;
+            if (clipboard == null)
+                return false;
+
+            return clipboard.IsActive && clipboard.HasCopiedGrids();
+        }
+
         private bool IsInActiveSession()
         {
             // Guard conditions
@@ -159,6 +169,8 @@ namespace ClientPlugin.Logic
 
         private bool HandleInactive(IMyInput input)
         {
+            MyFakes.DISABLE_CLIPBOARD_PLACEMENT_TEST = Cfg.DisablePlacementTest && HasClipboardContent() && input.IsAnyAltKeyPressed();
+
             if (Cfg.Activate.IsPressed(input))
             {
                 if (!(bool)CheckCopyPasteAllowed.Invoke(MyClipboardComponent.Static, Array.Empty<object>()))
@@ -456,6 +468,7 @@ namespace ClientPlugin.Logic
             switch (state)
             {
                 case State.Inactive:
+                    DrawPlacementTest();
                     return true;
 
                 case State.SelectingFirst:
@@ -517,6 +530,24 @@ namespace ClientPlugin.Logic
             return false;
         }
 
+        private void DrawPlacementTest()
+        {
+            if (!Cfg.DisablePlacementTest || !HasClipboardContent())
+                return;
+
+            if (MyFakes.DISABLE_CLIPBOARD_PLACEMENT_TEST)
+            {
+                var scale = Cfg.SizeTextScale;
+                DrawText("Placement test is disabled. Be careful!", Cfg.SizeColor, scale: scale, y: -0.04f * scale);
+                return;
+            }
+
+            if (Cfg.ShowHints)
+            {
+                DrawHint("Hold ALT to disable placement test", 1, 0f);
+            }
+        }
+
         private void DrawSize()
         {
             if (!Cfg.ShowSize)
@@ -554,7 +585,7 @@ namespace ClientPlugin.Logic
                 y = 0.04f * scale * (lineNumber - 1);
 
             var screenCoord = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
-            
+
             if (Cfg.TextShadowOffset != 0 && Cfg.TextShadowColor.A != 0)
             {
                 MyRenderProxy.DebugDrawText2D(screenCoord + new Vector2(Cfg.TextShadowOffset), text, Cfg.TextShadowColor, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
