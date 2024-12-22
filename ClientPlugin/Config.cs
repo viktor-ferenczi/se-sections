@@ -16,13 +16,14 @@ namespace ClientPlugin
 
         private bool deleteConfirmation = true;
         private bool cutConfirmation = true;
-        
+
         private string sectionsSubdirectory = "Sections";
         private bool renameBlueprint = true;
-        
+
         private bool fixPastePosition = true;
         private bool handleSubgrids = true;
-        
+        private bool disablePlacementTest = true;
+
         private bool showHints = true;
         private bool showSize = true;
         private float textPosition = 0.70f;
@@ -31,14 +32,14 @@ namespace ClientPlugin
         private Color sizeColor = new Color(0xff, 0x99, 0);
         private int textShadowOffset = 2;
         private Color textShadowColor = new Color(0, 0, 0, 0xcc);
-        
+
         private int highlightDensity = 3;
         private Color firstColor = Color.Blue;
         private Color secondColor = Color.Green;
         private Color aimedColor = Color.Blue;
         private Color boxColor = Color.Cyan;
         private Color finalBoxColor = Color.Yellow;
-        
+
         private Binding activate = new Binding(MyKeys.NumPad0);
         private Binding resetSelection = new Binding(MyKeys.R);
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
@@ -97,6 +98,13 @@ namespace ClientPlugin
         {
             get => handleSubgrids;
             set => SetField(ref handleSubgrids, value);
+        }
+
+        [Checkbox(description: "Holding Alt disables the placement test while pasting, use this only with great care")]
+        public bool DisablePlacementTest
+        {
+            get => disablePlacementTest;
+            set => SetField(ref disablePlacementTest, value);
         }
 
         [Separator("Overlay")]

@@ -19,17 +19,18 @@ namespace ClientPlugin.Settings.Elements
         {
             var label = new MyGuiControlLabel(text: Caption ?? "")
             {
-                // Size = new Vector2(0.5f, 0.04f),
                 ColorMask = Color.Orange,
             };
 
-            var c = Color.LightCyan;
+            var lineColor = Color.LightCyan;
+            lineColor.A = 0x22;
+            
             var line = new MyGuiControlLabel
             {
                 Size = new Vector2(0.5f, 0f),
                 BorderEnabled = true,
                 BorderSize = 1,
-                BorderColor = new Color(c.R,c.G,c.B,0.1f),
+                BorderColor = lineColor,
             };
 
             return new List<Control>()
