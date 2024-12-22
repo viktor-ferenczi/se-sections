@@ -491,6 +491,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Gui\NameDialog.cs" />
+    <Compile Include="Logic\ModStorage.cs" />
     <Compile Include="Logic\Constants.cs" />
     <Compile Include="Logic\Extensions.cs" />
     <Compile Include="Logic\Logic.cs" />

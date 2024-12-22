@@ -209,6 +209,10 @@ This is the ship used in some documentation screenshots and demo videos:
 
 ![IMDC Honorius DDS Warship](doc/IMDC-Honorius-Warship.jpg "IMDC Honorius DDS Warship")
 
+### Code contributors
+- Klime: How to disable the clipboard placement test (`BuildFreedom` plugin)
+- Pas2704: Mod storage data component registration code
+
 ### Patreon Supporters
 
 _in alphabetical order_

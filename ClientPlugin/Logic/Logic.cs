@@ -91,7 +91,7 @@ namespace ClientPlugin.Logic
         private DateTime startedMovingThumbnail;
         private int movingThumbnailProgress;
 
-        private void Reset()
+        public void Reset()
         {
             state = State.Inactive;
             grid = null;

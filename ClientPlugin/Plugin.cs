@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Reflection;
+using ClientPlugin.Logic;
 using ClientPlugin.Settings;
 using ClientPlugin.Settings.Layouts;
 using HarmonyLib;
+using Sandbox.Game.World;
 using Sandbox.Graphics.GUI;
 using VRage.Plugins;
 
@@ -24,14 +26,27 @@ namespace ClientPlugin
             // TODO: Put your one time initialization code here.
             Harmony harmony = new Harmony(Name);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            MySession.OnLoading += OnLoadingSession;
+            MySession.OnUnloading += OnUnloadingSession;
         }
 
         public void Dispose()
         {
-            // TODO: Save state and close resources here, called when the game exits (not guaranteed!)
-            // IMPORTANT: Do NOT call harmony.UnpatchAll() here! It may break other plugins.
+            MySession.OnLoading -= OnLoadingSession;
+            MySession.OnUnloading -= OnUnloadingSession;
 
             Instance = null;
+        }
+
+        private void OnLoadingSession()
+        {
+            ModStorage.RegisterModStorageComponentDefinition();
+        }
+
+        private void OnUnloadingSession()
+        {
+            Logic.Logic.Static.Reset();
         }
 
         public void Update()
