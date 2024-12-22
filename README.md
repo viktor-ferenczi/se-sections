@@ -143,6 +143,28 @@ With the fix implemented in this plugin you can just face where the origin block
 
 Certainly you have to make sure first, that the rotation is right, but that's already second nature...
 
+### Disabling the placement test
+
+**Holding Alt disables the placement test** while pasting. It is very useful if there is a subgrid
+in the way and while you know for sure it will not collide the game does not agree with you.
+
+It happens with some tight designs. For example if a small block torpedo is inside a tube of
+large block sliding doors:
+![Disable placement test](doc/DisablePlacementTest-1.png "Disable placement test")
+
+Let's cut out the PDC block and the torpedo tubes, so there is easy access to the torpedo welders:
+![Disable placement test](doc/DisablePlacementTest-2.png "Disable placement test")
+![Disable placement test](doc/DisablePlacementTest-3.png "Disable placement test")
+
+When you attempt to paste the block back the game shows a red placement box, indicating a collision:
+![Disable placement test](doc/DisablePlacementTest-4.png "Disable placement test")
+
+**Hold down Alt in this state.** It will show a warning message to remind you and
+the placement box will turn green, so the block can be pasted. 
+
+**Use this feature with great care!** Always make sure that no collision will happen, otherwise
+you will likely trigger some mighty horror by Clang with a potentially explisive effect.
+
 ## Configuration
 
 Press `Ctrl-Alt-/` while in-game and not in the GUI. It will open the list of
@@ -179,6 +201,13 @@ Space Engineers and Space Engineers 2 are trademarks of Keen Software House s.r.
 - [Bug reports](https://discord.gg/x3Z8Ug5YkQ)
 
 ## Credits
+
+### Workshop
+
+This is the ship used in some documentation screenshots and demo videos:
+[IMDC Honorius DDS Warship](https://steamcommunity.com/sharedfiles/filedetails/?id=1734992253)
+
+![IMDC Honorius DDS Warship](doc/IMDC-Honorius-Warship.jpg "IMDC Honorius DDS Warship")
 
 ### Patreon Supporters
 
