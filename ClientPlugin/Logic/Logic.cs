@@ -553,8 +553,14 @@ namespace ClientPlugin.Logic
             if (!y.HasValue)
                 y = 0.04f * scale * (lineNumber - 1);
 
-            var coords = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
-            MyRenderProxy.DebugDrawText2D(coords, text, color, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+            var screenCoord = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
+            
+            if (Cfg.TextShadowOffset != 0 && Cfg.TextShadowColor.A != 0)
+            {
+                MyRenderProxy.DebugDrawText2D(screenCoord + new Vector2(Cfg.TextShadowOffset), text, Cfg.TextShadowColor, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+            }
+
+            MyRenderProxy.DebugDrawText2D(screenCoord, text, color, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
         }
 
         private void DrawBlock(MySlimBlock block, Color color)

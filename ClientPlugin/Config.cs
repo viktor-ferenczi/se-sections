@@ -34,6 +34,8 @@ namespace ClientPlugin
         private float sizeTextScale = 2f;
         private Color hintColor = new Color(0xdd, 0xdd, 0);
         private Color sizeColor = new Color(0xff, 0x99, 0);
+        private int textShadowOffset = 2;
+        private Color textShadowColor = new Color(0, 0, 0, 0xcc);
         private Binding activate = new Binding(MyKeys.NumPad0);
         private Binding resetSelection = new Binding(MyKeys.R);
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
@@ -173,6 +175,20 @@ namespace ClientPlugin
         {
             get => sizeColor;
             set => SetField(ref sizeColor, value);
+        }
+
+        [Slider(0f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Text shadow offset (set to zero to turn off text shadows)")]
+        public int TextShadowOffset
+        {
+            get => textShadowOffset;
+            set => SetField(ref textShadowOffset, value);
+        }
+
+        [Color(hasAlpha: true, description: "Box size text color")]
+        public Color TextShadowColor
+        {
+            get => textShadowColor;
+            set => SetField(ref textShadowColor, value);
         }
 
         [Keybind(description: "Activate box selection")]
