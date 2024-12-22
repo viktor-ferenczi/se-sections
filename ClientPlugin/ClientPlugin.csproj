@@ -510,6 +510,7 @@
     <Compile Include="Settings\Elements\Dropdown.cs" />
     <Compile Include="Settings\Elements\Element.cs" />
     <Compile Include="Settings\Elements\Keybind.cs" />
+    <Compile Include="Settings\Elements\Separator.cs" />
     <Compile Include="Settings\Elements\Slider.cs" />
     <Compile Include="Settings\Elements\Textbox.cs" />
     <Compile Include="Settings\Layouts\Layout.cs" />

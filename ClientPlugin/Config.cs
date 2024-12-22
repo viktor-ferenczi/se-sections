@@ -3,7 +3,6 @@ using ClientPlugin.Settings.Elements;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using EmptyKeys.UserInterface.Input;
 using VRage.Input;
 using VRage.Utils;
 using VRageMath;
@@ -15,27 +14,31 @@ namespace ClientPlugin
     {
         #region Options
 
-        // Options
-        private string sectionsSubdirectory = "Sections";
         private bool deleteConfirmation = true;
         private bool cutConfirmation = true;
-        private bool fixPastePosition = true;
+        
+        private string sectionsSubdirectory = "Sections";
         private bool renameBlueprint = true;
+        
+        private bool fixPastePosition = true;
         private bool handleSubgrids = true;
+        
         private bool showHints = true;
         private bool showSize = true;
-        private int highlightDensity = 3;
-        private Color firstColor = Color.Blue;
-        private Color secondColor = Color.Green;
-        private Color aimedColor = Color.Blue;
-        private Color boxColor = Color.Cyan;
-        private Color finalBoxColor = Color.Yellow;
         private float textPosition = 0.70f;
         private float sizeTextScale = 2f;
         private Color hintColor = new Color(0xdd, 0xdd, 0);
         private Color sizeColor = new Color(0xff, 0x99, 0);
         private int textShadowOffset = 2;
         private Color textShadowColor = new Color(0, 0, 0, 0xcc);
+        
+        private int highlightDensity = 3;
+        private Color firstColor = Color.Blue;
+        private Color secondColor = Color.Green;
+        private Color aimedColor = Color.Blue;
+        private Color boxColor = Color.Cyan;
+        private Color finalBoxColor = Color.Yellow;
+        
         private Binding activate = new Binding(MyKeys.NumPad0);
         private Binding resetSelection = new Binding(MyKeys.R);
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
@@ -51,13 +54,7 @@ namespace ClientPlugin
 
         public readonly string Title = "Sections";
 
-        [Textbox(description: "Name of the blueprint subdirectory to store the sections to")]
-        public string SectionsSubdirectory
-        {
-            get => sectionsSubdirectory;
-            set => SetField(ref sectionsSubdirectory, value);
-        }
-
+        [Separator("Confirmations")]
         [Checkbox(description: "Ask for confirmation before deleting the selected blocks (Backspace)")]
         public bool DeleteConfirmation
         {
@@ -72,11 +69,12 @@ namespace ClientPlugin
             set => SetField(ref cutConfirmation, value);
         }
 
-        [Checkbox(description: "Fixes the drag position on pasting grids, so you can point directly where the origin block should go")]
-        public bool FixPastePosition
+        [Separator("Blueprints")]
+        [Textbox(description: "Name of the blueprint subdirectory to store the sections to")]
+        public string SectionsSubdirectory
         {
-            get => fixPastePosition;
-            set => SetField(ref fixPastePosition, value);
+            get => sectionsSubdirectory;
+            set => SetField(ref sectionsSubdirectory, value);
         }
 
         [Checkbox(description: "Opens a dialog box to rename the blueprint on saving and confirm overwrite (disables automatic numbering)")]
@@ -86,13 +84,22 @@ namespace ClientPlugin
             set => SetField(ref renameBlueprint, value);
         }
 
-        [Checkbox(description: "Handle subgrids together with mechanical connection blocks")]
+        [Separator("Features")]
+        [Checkbox(description: "Change the drag position on pasting grids, so you can point directly where the origin block should go")]
+        public bool FixPastePosition
+        {
+            get => fixPastePosition;
+            set => SetField(ref fixPastePosition, value);
+        }
+
+        [Checkbox(description: "Handle subgrids together with mechanical connection blocks (the ones which would be disconnected)")]
         public bool HandleSubgrids
         {
             get => handleSubgrids;
             set => SetField(ref handleSubgrids, value);
         }
 
+        [Separator("Overlay")]
         [Checkbox(description: "Enable showing the hints on screen")]
         public bool ShowHints
         {
@@ -105,48 +112,6 @@ namespace ClientPlugin
         {
             get => showSize;
             set => SetField(ref showSize, value);
-        }
-
-        [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
-        public int HighlightDensity
-        {
-            get => highlightDensity;
-            set => SetField(ref highlightDensity, value);
-        }
-
-        [Color(description: "Highlight color of the first selected block")]
-        public Color FirstColor
-        {
-            get => firstColor;
-            set => SetField(ref firstColor, value);
-        }
-
-        [Color(description: "Highlight color of the second selected block")]
-        public Color SecondColor
-        {
-            get => secondColor;
-            set => SetField(ref secondColor, value);
-        }
-
-        [Color(description: "Highlight color of the aimed block for blueprinting")]
-        public Color AimedColor
-        {
-            get => aimedColor;
-            set => SetField(ref aimedColor, value);
-        }
-
-        [Color(description: "Highlight color of the selection box while picking the second block")]
-        public Color BoxColor
-        {
-            get => boxColor;
-            set => SetField(ref boxColor, value);
-        }
-
-        [Color(description: "Highlight color of the final selection box")]
-        public Color FinalBoxColor
-        {
-            get => finalBoxColor;
-            set => SetField(ref finalBoxColor, value);
         }
 
         [Slider(0f, 0.9f, 0.01f, description: "Vertical position of the box size and hints on the screen")]
@@ -191,6 +156,50 @@ namespace ClientPlugin
             set => SetField(ref textShadowColor, value);
         }
 
+        [Separator("Block Selection")]
+        [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
+        public int HighlightDensity
+        {
+            get => highlightDensity;
+            set => SetField(ref highlightDensity, value);
+        }
+
+        [Color(description: "Highlight color of the first selected block")]
+        public Color FirstColor
+        {
+            get => firstColor;
+            set => SetField(ref firstColor, value);
+        }
+
+        [Color(description: "Highlight color of the second selected block")]
+        public Color SecondColor
+        {
+            get => secondColor;
+            set => SetField(ref secondColor, value);
+        }
+
+        [Color(description: "Highlight color of the aimed block for blueprinting")]
+        public Color AimedColor
+        {
+            get => aimedColor;
+            set => SetField(ref aimedColor, value);
+        }
+
+        [Color(description: "Highlight color of the selection box while picking the second block")]
+        public Color BoxColor
+        {
+            get => boxColor;
+            set => SetField(ref boxColor, value);
+        }
+
+        [Color(description: "Highlight color of the final selection box")]
+        public Color FinalBoxColor
+        {
+            get => finalBoxColor;
+            set => SetField(ref finalBoxColor, value);
+        }
+
+        [Separator("Keys")]
         [Keybind(description: "Activate box selection")]
         public Binding Activate
         {
