@@ -162,8 +162,8 @@ When you attempt to paste the block back the game shows a red placement box, ind
 **Hold down Alt in this state.** It will show a warning message to remind you and
 the placement box will turn green, so the block can be pasted. 
 
-**Use this feature with great care!** Always make sure that no collision will happen, otherwise
-you will likely trigger some mighty horror by Clang with a potentially explisive effect.
+**Use this feature with great care!** Always make sure that no actual collision will happen,
+otherwise you will likely trigger Clang.
 
 ## Configuration
 
