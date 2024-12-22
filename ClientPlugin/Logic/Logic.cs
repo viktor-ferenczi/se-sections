@@ -90,6 +90,22 @@ namespace ClientPlugin.Logic
         private DateTime startedMovingThumbnail;
         private int movingThumbnailProgress;
 
+        private void Reset()
+        {
+            state = State.Inactive;
+            grid = null;
+            aimedBlock = null;
+            firstBlock = null;
+            secondBlock = null;
+            box = BoundingBoxI.CreateInvalid();
+            originalBox = BoundingBoxI.CreateInvalid();
+            blueprintName = null;
+            temporaryThumbnailPath = null;
+            thumbnailPath = null;
+            startedMovingThumbnail = DateTime.UtcNow;
+            movingThumbnailProgress = 0;
+        }
+
         public bool HandleGameInput()
         {
             if (!IsInActiveSession())
@@ -218,7 +234,7 @@ namespace ClientPlugin.Logic
             if (input.IsNewLeftMousePressed())
             {
                 var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
-                Execute(Operation.Copy, includeIntersectingBlocks);
+                Copy(includeIntersectingBlocks);
                 Reset();
                 return true;
             }
@@ -345,15 +361,8 @@ namespace ClientPlugin.Logic
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
 
-            Execute(Operation.Delete, includeIntersectingBlocks);
+            Delete(includeIntersectingBlocks);
             Reset();
-        }
-
-        private enum Operation
-        {
-            Copy,
-            Cut,
-            Delete,
         }
 
         private void OnCutConfirmed(MyGuiScreenMessageBox.ResultEnum result, bool includeIntersectingBlocks)
@@ -361,25 +370,39 @@ namespace ClientPlugin.Logic
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
 
-            Execute(Operation.Cut, includeIntersectingBlocks);
+            Cut(includeIntersectingBlocks);
 
             Reset();
         }
 
-        private void Reset()
+        private void Copy(bool includeIntersectingBlocks)
         {
-            state = State.Inactive;
-            grid = null;
-            aimedBlock = null;
-            firstBlock = null;
-            secondBlock = null;
-            box = BoundingBoxI.CreateInvalid();
-            originalBox = BoundingBoxI.CreateInvalid();
-            blueprintName = null;
-            temporaryThumbnailPath = null;
-            thumbnailPath = null;
-            startedMovingThumbnail = DateTime.UtcNow;
-            movingThumbnailProgress = 0;
+            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            if (gridBuilders.Count == 0)
+                return;
+
+            CopyToClipboard(gridBuilders);
+        }
+
+        private void Cut(bool includeIntersectingBlocks)
+        {
+            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            if (gridBuilders.Count == 0)
+                return;
+
+            CopyToClipboard(gridBuilders);
+            DeleteBlocks(blockMinPositions);
+            DeleteGrids(subgrids);
+        }
+
+        private void Delete(bool includeIntersectingBlocks)
+        {
+            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            if (gridBuilders.Count == 0)
+                return;
+
+            DeleteBlocks(blockMinPositions);
+            DeleteGrids(subgrids);
         }
 
         private MySlimBlock GetAimedBlock(MyCubeGrid requiredGrid = null)
@@ -530,8 +553,14 @@ namespace ClientPlugin.Logic
             if (!y.HasValue)
                 y = 0.04f * scale * (lineNumber - 1);
 
-            var coords = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
-            MyRenderProxy.DebugDrawText2D(coords, text, color, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+            var screenCoord = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
+            
+            if (Cfg.TextShadowOffset != 0 && Cfg.TextShadowColor.A != 0)
+            {
+                MyRenderProxy.DebugDrawText2D(screenCoord + new Vector2(Cfg.TextShadowOffset), text, Cfg.TextShadowColor, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+            }
+
+            MyRenderProxy.DebugDrawText2D(screenCoord, text, color, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
         }
 
         private void DrawBlock(MySlimBlock block, Color color)
@@ -549,31 +578,6 @@ namespace ClientPlugin.Logic
             for (var i = 0; i < Cfg.HighlightDensity; i++)
             {
                 MyCubeBuilder.DrawSemiTransparentBox(box.Min, box.Max, grid, v4Color, lineMaterial: Cfg.BoxMaterial, lineColor: v4Color);
-            }
-        }
-
-        private void Execute(Operation operation, bool includeIntersectingBlocks)
-        {
-            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
-            if (gridBuilders.Count == 0)
-                return;
-
-            switch (operation)
-            {
-                case Operation.Copy:
-                    CopyToClipboard(gridBuilders);
-                    break;
-
-                case Operation.Cut:
-                    CopyToClipboard(gridBuilders);
-                    DeleteBlocks(blockMinPositions);
-                    DeleteGrids(subgrids);
-                    break;
-
-                case Operation.Delete:
-                    DeleteBlocks(blockMinPositions);
-                    DeleteGrids(subgrids);
-                    break;
             }
         }
 
