@@ -491,6 +491,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Gui\NameDialog.cs" />
+    <Compile Include="Logic\References.cs" />
     <Compile Include="Logic\ModStorage.cs" />
     <Compile Include="Logic\Constants.cs" />
     <Compile Include="Logic\Extensions.cs" />
@@ -498,9 +499,14 @@
     <Compile Include="Config.cs" />
     <Compile Include="Logic\MechanicalConnection.cs" />
     <Compile Include="Logic\MechanicalConnections.cs" />
+    <Compile Include="Logic\DataStorage.cs" />
+    <Compile Include="Logic\Reference.cs" />
     <Compile Include="Patches\MyBlueprintUtilsPatch.cs" />
     <Compile Include="Patches\MyCubeBuilderPatch.cs" />
+    <Compile Include="Patches\MyCubeGridPatch.cs" />
     <Compile Include="Patches\MyGridClipboardPatch.cs" />
+    <Compile Include="Patches\MyTerminalBlockPatch.cs" />
+    <Compile Include="Patches\PasteGridDataPatch.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\ConfigStorage.cs" />

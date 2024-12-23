@@ -8,7 +8,7 @@ namespace ClientPlugin.Patches
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
     // ReSharper disable once UnusedType.Global
-    public class MyCubeBuilderPatch
+    public static class MyCubeBuilderPatch
     {
         [HarmonyPrefix]
         [HarmonyPatch(nameof(MyCubeBuilder.HandleGameInput))]

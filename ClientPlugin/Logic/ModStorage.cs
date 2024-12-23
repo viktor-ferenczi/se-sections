@@ -13,6 +13,7 @@ namespace ClientPlugin.Logic
 {
     public static class ModStorage
     {
+        public const string ModStorageComponentSubtypeName = "BlockReferenceData";
         private static readonly Guid ModStorageGuid = new Guid("cd844fa4-4ac0-4d9c-8a01-73416b225772");
         private static bool modStorageComponentDefinitionRegistered;
 
@@ -27,10 +28,10 @@ namespace ClientPlugin.Logic
             // We need to define our own entity component here, otherwise the game removes the data.
             // Credits: Thanks goes to Pas2704 for providing the code in this method.
             var def = new MyModStorageComponentDefinition();
-            var id = new SerializableDefinitionId(typeof(MyObjectBuilder_ModStorageComponent), "BlockAssociations");
+            var id = new SerializableDefinitionId(typeof(MyObjectBuilder_ModStorageComponent), ModStorageComponentSubtypeName);
             def.Init(new MyObjectBuilder_ModStorageComponentDefinition
             {
-                SubtypeName = "BlockAssociations",
+                SubtypeName = ModStorageComponentSubtypeName,
                 Id = id,
                 RegisteredStorageGuids = new[] { ModStorageGuid }
             }, MyModContext.UnknownContext);
@@ -43,7 +44,7 @@ namespace ClientPlugin.Logic
             dict[id] = def;
         }
 
-        private static bool TryGetStorage(this MyTerminalBlock terminalBlock, out string value)
+        public static bool TryGetStorage(this MyTerminalBlock terminalBlock, out string value)
         {
             var storage = terminalBlock.Storage;
             if (storage == null)
@@ -55,7 +56,7 @@ namespace ClientPlugin.Logic
             return storage.TryGetValue(ModStorageGuid, out value);
         }
 
-        private static void SetStorage(this MyTerminalBlock terminalBlock, string value)
+        public static void SetStorage(this MyTerminalBlock terminalBlock, string value)
         {
             var storage = terminalBlock.Storage;
             if (storage == null)

@@ -389,6 +389,8 @@ namespace ClientPlugin.Logic
 
         private void Copy(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -398,6 +400,8 @@ namespace ClientPlugin.Logic
 
         private void Cut(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -409,6 +413,8 @@ namespace ClientPlugin.Logic
 
         private void Delete(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -656,6 +662,8 @@ namespace ClientPlugin.Logic
 
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -900,6 +908,22 @@ namespace ClientPlugin.Logic
             }
 
             return true;
+        }
+
+        public void TryPasteGridPostfix(List<MyCubeGrid> pastedGrids)
+        {
+            foreach (var pastedGrid in pastedGrids)
+            {
+                if (pastedGrid.Closed || !pastedGrid.InScene || pastedGrid.Physics == null)
+                    continue;
+
+                new References(pastedGrid).Restore();
+            }
+        }
+
+        public void PasteBlocksToGridPostfix(MyCubeGrid gridPastedOn)
+        {
+            new References(gridPastedOn).Restore();
         }
     }
 }

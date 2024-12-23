@@ -1,5 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.Screens.Helpers;
+using SpaceEngineers.Game.Entities.Blocks;
 using VRage;
 using VRage.Game;
 using VRageMath;
@@ -102,6 +108,28 @@ namespace ClientPlugin.Logic
                 var gridPO = gridBuilder.PositionAndOrientation.Value;
                 gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(gridPO.Position - mainGridPosition, gridPO.Forward, gridPO.Up);
             }
-        }        
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MyToolbar GetToolbar(this MyTerminalBlock block)
+        {
+            switch (block)
+            {
+                case MySensorBlock b:
+                    return b.Toolbar;
+                case MyButtonPanel b:
+                    return b.Toolbar;
+                case MyEventControllerBlock b:
+                    return b.Toolbar;
+                case MyFlightMovementBlock b:
+                    return b.Toolbar;
+                case MyShipController b:
+                    return b.Toolbar;
+                case MyTimerBlock b:
+                    return b.Toolbar;
+            }
+
+            return null;
+        }
     }
 }
