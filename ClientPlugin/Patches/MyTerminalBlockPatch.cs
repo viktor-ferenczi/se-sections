@@ -49,5 +49,10 @@ namespace ClientPlugin.Patches
 
             textPanel = null;
         }
+
+        public static void OnLoadingSession()
+        {
+            controlAdded = false;
+        }
     }
 }

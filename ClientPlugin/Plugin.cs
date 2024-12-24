@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using ClientPlugin.Logic;
+using ClientPlugin.Patches;
 using ClientPlugin.Settings;
 using ClientPlugin.Settings.Layouts;
 using HarmonyLib;
@@ -42,6 +43,7 @@ namespace ClientPlugin
         private void OnLoadingSession()
         {
             ModStorage.RegisterModStorageComponentDefinition();
+            MyTerminalBlockPatch.OnLoadingSession();
         }
 
         private void OnUnloadingSession()
@@ -51,7 +53,7 @@ namespace ClientPlugin
 
         public void Update()
         {
-            // TODO: Put your update code here. It is called on every simulation frame!
+            Logic.Logic.Static?.Update();
         }
 
         // ReSharper disable once UnusedMember.Global

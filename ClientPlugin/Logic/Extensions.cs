@@ -1,13 +1,18 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using HarmonyLib;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.Screens.Helpers;
+using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
 using VRage;
 using VRage.Game;
+using VRage.ObjectBuilder;
+using VRage.Sync;
 using VRageMath;
 
 namespace ClientPlugin.Logic
@@ -88,7 +93,7 @@ namespace ClientPlugin.Logic
             // FIXME: Possibility of integer overflow should a grid be larger than 25800 along all 3 axis
             return set.Select(v => v - floor).MinBy(v => Vector3I.Dot(v, v)) + floor;
         }
-        
+
         public static void CensorWorldPosition(this IReadOnlyCollection<MyObjectBuilder_CubeGrid> gridBuilders)
         {
             if (gridBuilders == null || gridBuilders.Count == 0)
@@ -98,7 +103,7 @@ namespace ClientPlugin.Logic
             if (!maybeMainGridPO.HasValue)
                 return;
 
-            var mainGridPosition = (Vector3D) maybeMainGridPO.Value.Position;
+            var mainGridPosition = (Vector3D)maybeMainGridPO.Value.Position;
 
             foreach (var gridBuilder in gridBuilders)
             {
@@ -109,7 +114,7 @@ namespace ClientPlugin.Logic
                 gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(gridPO.Position - mainGridPosition, gridPO.Forward, gridPO.Up);
             }
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MyToolbar GetToolbar(this MyTerminalBlock block)
         {
@@ -130,6 +135,48 @@ namespace ClientPlugin.Logic
             }
 
             return null;
+        }
+
+        private static readonly FieldInfo SelectedBlocksField = AccessTools.DeclaredField(typeof(MyEventControllerBlock), "m_selectedBlocks");
+
+        public static Dictionary<long, IMyTerminalBlock> GetSelectedBlocks(this MyEventControllerBlock eventControllerBlock)
+        {
+            return (Dictionary<long, IMyTerminalBlock>)SelectedBlocksField.GetValue(eventControllerBlock);
+        }
+
+        private static readonly FieldInfo SelectedBlockIdsField = AccessTools.DeclaredField(typeof(MyEventControllerBlock), "m_selectedBlockIds");
+
+        public static MySerializableList<long> GetSelectedBlockIds(this MyEventControllerBlock eventControllerBlock)
+        {
+            return (MySerializableList<long>)SelectedBlockIdsField.GetValue(eventControllerBlock);
+        }
+
+        private static readonly FieldInfo BoundCameraSyncField = AccessTools.DeclaredField(typeof(MyRemoteControl), "m_bindedCamera" /* sic */);
+
+        public static Sync<long, SyncDirection.BothWays> GetBoundCameraSync(this MyRemoteControl remoteControlBlock)
+        {
+            return (Sync<long, SyncDirection.BothWays>)BoundCameraSyncField.GetValue(remoteControlBlock);
+        }
+
+        private static readonly MethodInfo AddBlocksMethod = AccessTools.DeclaredMethod(typeof(MyEventControllerBlock), "AddBlocks");
+
+        public static void AddBlocks(this MyEventControllerBlock eventControllerBlock, List<long> toSync)
+        {
+            AddBlocksMethod.Invoke(eventControllerBlock, new[] { toSync });
+        }
+
+        private static readonly MethodInfo RemoveBlocksMethod = AccessTools.DeclaredMethod(typeof(MyEventControllerBlock), "RemoveBlocks");
+
+        public static void RemoveBlocks(this MyEventControllerBlock eventControllerBlock, List<long> toSync)
+        {
+            RemoveBlocksMethod.Invoke(eventControllerBlock, new[] { toSync });
+        }
+
+        private static readonly MethodInfo ToolSelectionRequestMethod = AccessTools.DeclaredMethod(typeof(MyTurretControlBlock), "ToolSelectionRequest");
+
+        public static void ToolSelectionRequest(this MyTurretControlBlock turretControlBlock, List<long> toSync)
+        {
+            ToolSelectionRequestMethod.Invoke(turretControlBlock, new[] { toSync });
         }
     }
 }

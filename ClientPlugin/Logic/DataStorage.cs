@@ -98,5 +98,14 @@ namespace ClientPlugin.Logic
 
             TerminalBlock.SetStorage(data.ToString());
         }
+
+        protected Group GetOrCreateGroup(string name, int capacity = 4)
+        {
+            if (Groups.TryGetValue(name, out var group))
+                return group;
+
+            Groups[name] = group = new Group(capacity);
+            return group;
+        }
     }
 }

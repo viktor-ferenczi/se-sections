@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -13,7 +12,6 @@ using Sandbox.Engine.Physics;
 using Sandbox.Engine.Utils;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.GameSystems.CoordinateSystem;
 using Sandbox.Game.Gui;
@@ -90,6 +88,8 @@ namespace ClientPlugin.Logic
         private string thumbnailPath;
         private DateTime startedMovingThumbnail;
         private int movingThumbnailProgress;
+
+        public Queue<MyCubeGrid> BlockReferenceRestoreQueue = new Queue<MyCubeGrid>();
 
         public void Reset()
         {
@@ -917,13 +917,26 @@ namespace ClientPlugin.Logic
                 if (pastedGrid.Closed || !pastedGrid.InScene || pastedGrid.Physics == null)
                     continue;
 
-                new References(pastedGrid).Restore();
+                BlockReferenceRestoreQueue.Enqueue(pastedGrid);
             }
         }
 
         public void PasteBlocksToGridPostfix(MyCubeGrid gridPastedOn)
         {
-            new References(gridPastedOn).Restore();
+            BlockReferenceRestoreQueue.Enqueue(gridPastedOn);
+        }
+
+        public void Update()
+        {
+            if (!IsInActiveSession())
+                return;
+
+            var grids = new HashSet<MyCubeGrid>();
+            while (BlockReferenceRestoreQueue.Count != 0)
+                grids.Add(BlockReferenceRestoreQueue.Dequeue());
+
+            foreach (var grid in grids)
+                new References(grid).Restore();
         }
     }
 }
