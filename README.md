@@ -48,6 +48,10 @@ for the selection to work, actually it would just be in the way. I suggest press
 ![Selecting the first block](doc/Selecting1.png "Selecting the first block")
 ![Selecting the second block](doc/Selecting2.png "Selecting the second block")
 
+The block distance from the character is the same as normal block placement in creative mode.
+You can change the maximum distance of the aimed block by keeping any block at hand while
+Sections is **not** active and using the `Ctrl-MouseWheel` to change the distance. 
+
 ### Resizing the selection box
 
 Adjust the selection box as needed:
@@ -102,6 +106,43 @@ mechanical connections to the main grid which was selected. It ensures that no s
 is lost. It should work in any combination of mechanical connections, including reverse
 order ones (which cannot be built directly in the game, only "towed" together) and
 multiple connections between the same pair of subgrids (like double hinged PDCs or doors).
+
+### Preserving block references
+
+References between blocks via toolbars, drop-down block selectors or block lists would
+be lost if part of the grid is cut or copied via a section blueprint. To avoid this from
+happening the Sections plugin implements a mechanism to store all such block references
+and restore them relationships when grids are pasted back onto each other. For example
+slicing a ship and merging the pieces back together should not break functionality.
+
+The following blocks refer to other blocks:
+- Any block with a toolbar (`Cockpit`, `Sensor`, `AI Defensive`, etc.) 
+- `Remote Control` assigned camera 
+- `Event Controller` selected blocks 
+- `Turret Controller` azimuth and elevation rotors, camera and bound tool blocks
+- `AI Offensive` block weapons list
+- `AI Recorder` block waypoint toolbars
+
+For each terminal block the Sections plugin saves the following into a new entry in `ModStorage`:
+- GUID of the block itself
+- GUIDs of each block referenced
+
+This data is saved right before the Sections plugin operates on a grid.
+
+You can see the data stored by using the `Block Reference Data` button on the block's terminal.
+
+For example the toolbar slots of a `Cockpit` saved like this: 
+![Block reference data](doc/BlockReferenceData.png "Block reference data")
+
+This information is copied with the grid, saved with the world and blueprints. This information
+is then used to restore any missing block references whenever the grids with such data stored
+are pasted onto each other. These are typically ship "slices" produced by this plugin.
+
+Should you need it, this information can be cleared from the grid. Activate the Sections
+plugin (NumPad 0), face a grid and press the `-` (minus) key to initiate the clearing of
+this data. Please note that these keys are remappable. This operation has a confirmation
+dialog which cannot be turned off. The clearing affects only the faced grid and all of 
+its subgrids.
 
 ### Managing saved sections
 
@@ -177,11 +218,9 @@ The configuration can be changed anytime without having to restart the game.
 
 ## Known issues and limitations
 
-- **Blocks assigned to any toolbars** (cockpits, timers, etc) **or added to Event/Turret Controller block lists get disconnected** if they end up on separate grids. **I plan to solve this issue in a straighforward way. Stay tuned!**
-- The **selection box** can cover blocks and operate only on a **single grid**. This is normal and likely won't change.
+- **No support for symmetry mode.** This is planned for version 1.4.0.
 - Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. **Play with it!**
 - This plugin is **largely untested in survival** (only with creative mode tools enabled) and is disabled in multiplayer (even if you're an admin). It should work if you're playing on the server of a "Friends" multiplayer game, but this mode has **not** been tested yet.
-- **Pasting sections may be blocked by subgrids in the way**, even if the hitboxes of actual blocks would not collide. **There will be an override key to turn this check off during pasting. Stay tuned!** 
 
 ## Troubleshooting
 
