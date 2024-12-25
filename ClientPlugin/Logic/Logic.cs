@@ -199,6 +199,13 @@ namespace ClientPlugin.Logic
             if (firstBlock == null || grid == null)
                 return false;
 
+            if (firstBlock != null && Cfg.ClearBlockReferenceData.IsPressed(input))
+            {
+                ClearBlockReferenceData(firstBlock.CubeGrid);
+                Reset();
+                return true;
+            }
+
             if (input.IsNewLeftMousePressed())
             {
                 state = State.SelectingSecond;
@@ -229,6 +236,35 @@ namespace ClientPlugin.Logic
             }
 
             return false;
+        }
+
+        private void ClearBlockReferenceData(MyCubeGrid mainGrid)
+        {
+            if (mainGrid == null)
+                return;
+            
+            var messageBox = MyGuiSandbox.CreateMessageBox(
+                MyMessageBoxStyleEnum.Info,
+                MyMessageBoxButtonsType.YES_NO,
+                new StringBuilder("Are you sure to clear all block reference data\r\nfrom this grid and all connected subgrids?"),
+                new StringBuilder("Confirmation - Box Selector"),
+                callback: result => OnClearBlockReferenceDataConfirmed(result, mainGrid));
+
+            MyGuiSandbox.AddScreen(messageBox);
+        }
+
+        private void OnClearBlockReferenceDataConfirmed(MyGuiScreenMessageBox.ResultEnum result, MyCubeGrid mainGrid)
+        {
+            if (result != MyGuiScreenMessageBox.ResultEnum.YES)
+                return;
+
+            if (mainGrid == null)
+                return;
+
+            References.ClearBlockReferenceData(mainGrid);
+
+            var gridName = mainGrid.DisplayName ?? mainGrid.Name ?? mainGrid.EntityId.ToString();
+            MyAPIGateway.Utilities.ShowMessage("Sections", $"Block reference data has been cleared from this grid and all connected subgrids: {gridName}");
         }
 
         private const string ConfigurationHint = "\r\n\r\nYou can disable this confirmation in configuration.\r\nTo configure, press Ctrl-Alt-/ after closing this dialog.";
@@ -482,9 +518,10 @@ namespace ClientPlugin.Logic
                     MyCoordinateSystem.Static.Visible = true;
                     if (firstBlock != null)
                         DrawBlock(firstBlock, Cfg.FirstColor);
-                    DrawHint("Select the first corner block", 2, x: 0.05f);
-                    DrawHint("ESC: Cancel", 3, x: 0.05f);
-                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0.05f);
+                    DrawHint("Select the first corner block", 1, x: 0f);
+                    DrawHint("ESC: Cancel", 2, x: 0f);
+                    DrawHint($"{Cfg.ClearBlockReferenceData}: Clear block reference data", 3, x: 0f);
+                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
                     break;
 
                 case State.SelectingSecond:
@@ -497,9 +534,9 @@ namespace ClientPlugin.Logic
                     }
 
                     DrawSize();
-                    DrawHint("Select the second corner block", 2, x: 0.05f);
-                    DrawHint("ESC: Cancel", 3, x: 0.05f);
-                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0.05f);
+                    DrawHint("Select the second corner block", 1, x: 0f);
+                    DrawHint("ESC: Cancel", 2, x: 0f);
+                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
                     break;
 
                 case State.Resizing:
@@ -510,11 +547,11 @@ namespace ClientPlugin.Logic
                     DrawSize();
                     DrawHint("Block rotation keys: Grow", 1, x: -0.1f);
                     DrawHint("+SHIFT to shrink the box", 2, x: -0.1f);
-                    DrawHint("R: Restore original box", 3, x: -0.1f);
+                    DrawHint($"{Cfg.ResetSelection}: Restore original box", 3, x: -0.1f);
                     DrawHint("Ctrl+Alt+/: Configure", 4, x: -0.1f);
                     DrawHint("LMB: Copy    RMB: Cut", 1, x: 0.14f);
-                    DrawHint("Backspace: Delete", 2, x: 0.14f);
-                    DrawHint("ENTER: Save as a Section blueprint", 3, x: 0.14f);
+                    DrawHint($"{Cfg.DeleteSelectedBlocks}: Delete", 2, x: 0.14f);
+                    DrawHint($"{Cfg.SaveSelectedBlocks}: Save as a Section blueprint", 3, x: 0.14f);
                     DrawHint("+CTRL to include intersecting blocks", 4, x: 0.14f);
                     break;
 
@@ -548,10 +585,7 @@ namespace ClientPlugin.Logic
                 return;
             }
 
-            if (Cfg.ShowHints)
-            {
-                DrawHint("Hold ALT to disable placement test", 1, 0f);
-            }
+            DrawHint("Hold ALT to disable placement test", 1, 0f);
         }
 
         private void DrawSize()
@@ -582,7 +616,7 @@ namespace ClientPlugin.Logic
             if (!Cfg.ShowHints)
                 return;
 
-            DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.4f + x);
+            DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.43f + x);
         }
 
         private void DrawText(string text, Color color, int lineNumber = 1, float scale = 1f, bool center = true, float x = 0.5f, float? y = null)

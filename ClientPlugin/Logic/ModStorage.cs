@@ -70,5 +70,10 @@ namespace ClientPlugin.Logic
                 storage[ModStorageGuid] = value;
             }
         }
+
+        public static void RemoveStorage(this MyTerminalBlock terminalBlock)
+        {
+            terminalBlock.Storage?.Remove(ModStorageGuid);
+        }
     }
 }

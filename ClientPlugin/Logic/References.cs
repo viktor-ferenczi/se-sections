@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.Gui;
 
 namespace ClientPlugin.Logic
 {
@@ -15,6 +17,7 @@ namespace ClientPlugin.Logic
 
         public References(MyCubeGrid grid)
         {
+            // FIXME: Use the mechanical (physical) group to find all subgrids, that should be faster
             var mechanicalConnections = new MechanicalConnections(grid);
             var grids = mechanicalConnections.IterGrids.ToList();
             InitFromGrids(grids);
@@ -64,6 +67,29 @@ namespace ClientPlugin.Logic
             foreach (var reference in referencesByBlock.Values)
             {
                 reference.Restore(referencesByBlock, referencesByGuid);
+            }
+        }
+
+        public static void ClearBlockReferenceData(MyCubeGrid mainGrid)
+        {
+            if (mainGrid == null)
+                return;
+            
+            // FIXME: Use the mechanical (physical) group to find all subgrids, that should be faster
+            var mechanicalConnections = new MechanicalConnections(mainGrid);
+            var grids = mechanicalConnections.IterGrids.ToList();
+            foreach (var grid in grids)
+                ClearBlockReferenceDataFromSubgrid(grid);
+        }
+
+        private static void ClearBlockReferenceDataFromSubgrid(MyCubeGrid grid)
+        {
+            foreach (var slimBlock in grid.CubeBlocks)
+            {
+                if (!(slimBlock.FatBlock is MyTerminalBlock terminalBlock))
+                    continue;
+                
+                terminalBlock.RemoveStorage();
             }
         }
     }

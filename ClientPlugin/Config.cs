@@ -45,6 +45,7 @@ namespace ClientPlugin
         private Binding resetSelection = new Binding(MyKeys.R);
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
         private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
+        private Binding clearBlockReferenceData = new Binding(MyKeys.OemMinus);
 
         // Not configurable yet
         public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
@@ -242,6 +243,13 @@ namespace ClientPlugin
         {
             get => deleteSelectedBlocks;
             set => SetField(ref deleteSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Clear block reference data")]
+        public Binding ClearBlockReferenceData
+        {
+            get => clearBlockReferenceData;
+            set => SetField(ref clearBlockReferenceData, value);
         }
 
         #endregion
