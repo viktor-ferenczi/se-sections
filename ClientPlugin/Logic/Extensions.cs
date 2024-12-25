@@ -132,9 +132,18 @@ namespace ClientPlugin.Logic
                     return b.Toolbar;
                 case MyTimerBlock b:
                     return b.Toolbar;
+                case MyDefensiveCombatBlock b:
+                    return b.GetWaypointActionsToolbar();
             }
 
             return null;
+        }
+
+        private static readonly FieldInfo WaypointActionsToolbarField = AccessTools.DeclaredField(typeof(MyDefensiveCombatBlock), "m_waypointActionsToolbar");
+
+        public static MyToolbar GetWaypointActionsToolbar(this MyDefensiveCombatBlock defensiveCombatBlock)
+        {
+            return (MyToolbar)WaypointActionsToolbarField.GetValue(defensiveCombatBlock);
         }
 
         private static readonly FieldInfo SelectedBlocksField = AccessTools.DeclaredField(typeof(MyEventControllerBlock), "m_selectedBlocks");
@@ -170,13 +179,6 @@ namespace ClientPlugin.Logic
         public static void RemoveBlocks(this MyEventControllerBlock eventControllerBlock, List<long> toSync)
         {
             RemoveBlocksMethod.Invoke(eventControllerBlock, new[] { toSync });
-        }
-
-        private static readonly MethodInfo ToolSelectionRequestMethod = AccessTools.DeclaredMethod(typeof(MyTurretControlBlock), "ToolSelectionRequest");
-
-        public static void ToolSelectionRequest(this MyTurretControlBlock turretControlBlock, List<long> toSync)
-        {
-            ToolSelectionRequestMethod.Invoke(turretControlBlock, new[] { toSync });
         }
     }
 }

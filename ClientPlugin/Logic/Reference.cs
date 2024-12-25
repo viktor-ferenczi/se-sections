@@ -10,6 +10,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.Game.Screens.Helpers;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
+using SpaceEngineers.Game.EntityComponents.Blocks;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using VRage.ObjectBuilder;
 using Group = System.Collections.Generic.Dictionary<string, string>;
@@ -32,6 +33,14 @@ namespace ClientPlugin.Logic
                 case MyTurretControlBlock b:
                     return new TurretController(b);
                 
+                case MyOffensiveCombatBlock b:
+                    return new OffensiveCombat(b);
+                
+                case MyPathRecorderBlock b:
+                    // AI Recorder block
+                    return new PathRecorder(b);
+                
+                case MyDefensiveCombatBlock _:
                 case MySensorBlock _:
                 case MyButtonPanel _:
                 case MyFlightMovementBlock _:
@@ -111,6 +120,23 @@ namespace ClientPlugin.Logic
         {
             var itemCount = toolbar.SlotCount * toolbar.PageCount;
             var group = GetOrCreateGroup(GroupName, itemCount);
+            BackupToolbar(referenceByBlock, group, toolbar);
+        }
+
+        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        {
+            if (!Groups.TryGetValue(GroupName, out var group))
+                return;
+
+            RestoreToolbar(referenceByBlock, referenceByGuid, group, toolbar);
+            
+            // Toolbar items do not need change notifications to be sent, because ItemChanged
+            // has already been invoked by SetItemAtIndex whenever required
+        }
+
+        public static void BackupToolbar(Dictionary<long, Reference> referenceByBlock, Group group, MyToolbar toolbar)
+        {
+            var itemCount = toolbar.SlotCount * toolbar.PageCount;
             for (var i = 0; i < itemCount; i++)
             {
                 if (!(toolbar.GetItemAtIndex(i) is MyToolbarItemTerminalBlock terminalBlockItem))
@@ -119,12 +145,9 @@ namespace ClientPlugin.Logic
                 TryBackupBlockId(referenceByBlock, group, i.ToString(), terminalBlockItem.BlockEntityId);
             }
         }
-
-        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        
+        public static void RestoreToolbar(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid, Group group, MyToolbar toolbar)
         {
-            if (!Groups.TryGetValue(GroupName, out var group))
-                return;
-
             foreach (var kv in group)
             {
                 if (!int.TryParse(kv.Key, out var i))
@@ -146,9 +169,6 @@ namespace ClientPlugin.Logic
                 itemBuilder.BlockEntityId = reference.TerminalBlock.EntityId;
                 toolbar.SetItemAtIndex(i, MyToolbarItemFactory.CreateToolbarItem(itemBuilder));
             }
-            
-            // Toolbar items do not need change notifications to be sent, because ItemChanged
-            // has already been invoked by SetItemAtIndex whenever required
         }
     }
 
@@ -241,7 +261,7 @@ namespace ClientPlugin.Logic
 
     public class TurretController : Reference
     {
-        private const string TurretControlGroupName = "TurretControl";
+        private const string TurretControlGroupName = "Turret";
         private const string ToolsGroupName = "Tools";
         private IMyTurretControlBlock TurretControlBlock => (IMyTurretControlBlock)TerminalBlock; 
 
@@ -305,6 +325,97 @@ namespace ClientPlugin.Logic
 
                 TurretControlBlock.RemoveTools(blockIdsToRemove.Take(blockIdsToAdd.Count).ToList());
                 TurretControlBlock.AddTools(blockIdsToAdd);
+            }
+        }
+    }
+    
+    public class OffensiveCombat : Reference
+    {
+        private const string WeaponsGroupName = "Weapons";
+        private MyOffensiveCombatBlock OffensiveCombatBlock => (MyOffensiveCombatBlock)TerminalBlock;
+
+        public OffensiveCombat(MyTerminalBlock terminalBlock) : base(terminalBlock)
+        {
+        }
+        
+        public override void Backup(Dictionary<long, Reference> referenceByBlock)
+        {
+            if (!OffensiveCombatBlock.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+                return;
+
+            var group = GetOrCreateGroup(WeaponsGroupName);
+            var selectedWeapons = new List<long>();
+            component.GetSelectedWeapons(selectedWeapons);
+            var i = 0;
+            foreach (var blockId in selectedWeapons)
+            {
+                TryBackupBlockId(referenceByBlock, group, (i++).ToString(), blockId);
+            }
+        }
+
+        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        {
+            if (!Groups.TryGetValue(WeaponsGroupName, out var group))
+                return;
+            
+            if (!OffensiveCombatBlock.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+                return;
+
+            var selectedWeapons = new List<long>();
+            component.GetSelectedWeapons(selectedWeapons);
+
+            var modified = false;
+            foreach (var guid in group.Values)
+            {
+                if (!referenceByGuid.TryGetValue(guid, out var reference))
+                    continue;
+                
+                if (selectedWeapons.Contains(reference.TerminalBlock.EntityId))
+                    continue;
+                
+                selectedWeapons.Add(reference.TerminalBlock.EntityId);
+                modified = true;
+            }
+
+            if (modified)
+                component.SetSelectedWeapons(selectedWeapons);
+        }
+    }
+    
+    public class PathRecorder : Reference
+    {
+        private const string WaypointGroupName = "Waypoint:{0}";
+        private MyPathRecorderBlock PathRecorderBlock => (MyPathRecorderBlock)TerminalBlock;
+
+        public PathRecorder(MyTerminalBlock terminalBlock) : base(terminalBlock)
+        {
+        }
+        
+        public override void Backup(Dictionary<long, Reference> referenceByBlock)
+        {
+            if (!PathRecorderBlock.GetComponent(out MyPathRecorderComponent component))
+                return;
+
+            var i = 0;
+            foreach (var waypoint in component.Waypoints)
+            {
+                var group = GetOrCreateGroup(string.Format(WaypointGroupName, i++));
+                ToolbarOwner.BackupToolbar(referenceByBlock, group, waypoint.Toolbar);
+            }
+        }
+
+        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        {
+            if (!PathRecorderBlock.GetComponent(out MyPathRecorderComponent component))
+                return;
+
+            var i = 0;
+            foreach (var waypoint in component.Waypoints)
+            {
+                if (!Groups.TryGetValue(string.Format(WaypointGroupName, i++), out var group))
+                    continue;
+                
+                ToolbarOwner.RestoreToolbar(referenceByBlock, referenceByGuid, group, waypoint.Toolbar);
             }
         }
     }
