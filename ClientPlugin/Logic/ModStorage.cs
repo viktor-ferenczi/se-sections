@@ -15,15 +15,9 @@ namespace ClientPlugin.Logic
     {
         public const string ModStorageComponentSubtypeName = "BlockReferenceData";
         private static readonly Guid ModStorageGuid = new Guid("cd844fa4-4ac0-4d9c-8a01-73416b225772");
-        private static bool modStorageComponentDefinitionRegistered;
 
         public static void RegisterModStorageComponentDefinition()
         {
-            if (modStorageComponentDefinitionRegistered)
-                return;
-
-            modStorageComponentDefinitionRegistered = true;
-
             // CustomData is defined in Content\Data\EntityComponents.sbc
             // We need to define our own entity component here, otherwise the game removes the data.
             // Credits: Thanks goes to Pas2704 for providing the code in this method.
