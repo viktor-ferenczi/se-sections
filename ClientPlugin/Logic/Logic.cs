@@ -111,7 +111,8 @@ namespace ClientPlugin.Logic
         {
             if (!IsInActiveSession())
             {
-                Reset();
+                if (state != State.Inactive)
+                    Reset();
                 return false;
             }
 
