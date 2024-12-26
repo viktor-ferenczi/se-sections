@@ -681,6 +681,8 @@ namespace ClientPlugin.Logic
                 grid.RemoveBlock(grid.GetCubeBlock(min), true);
             }
 
+            grid.RecalcBounds();
+            grid.RecalculateOwners();
             grid.Physics.AddDirtyArea(box.Min, box.Max);
         }
 

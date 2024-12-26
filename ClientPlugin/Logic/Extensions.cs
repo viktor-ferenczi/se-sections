@@ -180,5 +180,12 @@ namespace ClientPlugin.Logic
         {
             RemoveBlocksMethod.Invoke(eventControllerBlock, new[] { toSync });
         }
+
+        private static readonly MethodInfo RecalcBoundsMethod = AccessTools.DeclaredMethod(typeof(MyCubeGrid), "RecalcBounds");
+
+        public static void RecalcBounds(this MyCubeGrid grid)
+        {
+            RecalcBoundsMethod.Invoke(grid, new object[] { });
+        }
     }
 }
