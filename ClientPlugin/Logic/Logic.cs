@@ -163,7 +163,6 @@ namespace ClientPlugin.Logic
                    MyCubeBuilder.Static != null &&
                    MyInput.Static != null &&
                    MySandboxGame.Static != null &&
-                   MyCoordinateSystem.Static != null &&
                    MyClipboardComponent.Static != null;
         }
 
@@ -515,7 +514,6 @@ namespace ClientPlugin.Logic
 
                 case State.SelectingFirst:
                     ClearRenderData.Invoke(cubeBuilder, Array.Empty<object>());
-                    MyCoordinateSystem.Static.Visible = true;
                     if (firstBlock != null)
                         DrawBlock(firstBlock, Cfg.FirstColor);
                     DrawHint("Select the first corner block", 1, x: 0f);
@@ -525,7 +523,6 @@ namespace ClientPlugin.Logic
                     break;
 
                 case State.SelectingSecond:
-                    MyCoordinateSystem.Static.Visible = true;
                     DrawBlock(firstBlock, Cfg.FirstColor);
                     if (secondBlock != null)
                     {
@@ -540,7 +537,6 @@ namespace ClientPlugin.Logic
                     break;
 
                 case State.Resizing:
-                    MyCoordinateSystem.Static.Visible = false;
                     DrawBox(Cfg.FinalBoxColor);
                     if (aimedBlock != null)
                         DrawBlock(aimedBlock, Cfg.AimedColor);
@@ -556,7 +552,6 @@ namespace ClientPlugin.Logic
                     break;
 
                 case State.TakingScreenshot:
-                    MyCoordinateSystem.Static.Visible = false;
                     DrawBox(Cfg.FinalBoxColor);
                     if (aimedBlock != null)
                         DrawBlock(aimedBlock, Cfg.AimedColor);
