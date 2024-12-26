@@ -10,7 +10,7 @@ namespace ClientPlugin.Patches
     [HarmonyPatch(typeof(MyGridClipboard))]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
     // ReSharper disable once UnusedType.Global
-    public class MyGridClipboardPatch
+    public static class MyGridClipboardPatch
     {
         [HarmonyPrefix]
         [HarmonyPatch(nameof(MyGridClipboard.SetGridFromBuilder))]
@@ -18,7 +18,7 @@ namespace ClientPlugin.Patches
         {
             if (!Config.Current.FixPastePosition)
                 return true;
-            
+
             // Pick out the "origin" block which was faced while making the blueprint.
             // It is always the first cube block of the main subgrid (first grid).
             var firstBlock = grid?.CubeBlocks.FirstOrDefault();
@@ -34,7 +34,7 @@ namespace ClientPlugin.Patches
         {
             if (!Config.Current.FixPastePosition)
                 return true;
-            
+
             // Pick out the "origin" block which was faced while making the blueprint.
             // It is always the first cube block of the main subgrid (first grid).
             var firstGrid = grids.FirstOrDefault();

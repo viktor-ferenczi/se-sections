@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -13,7 +12,6 @@ using Sandbox.Engine.Physics;
 using Sandbox.Engine.Utils;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.GameSystems.CoordinateSystem;
 using Sandbox.Game.Gui;
@@ -91,7 +89,9 @@ namespace ClientPlugin.Logic
         private DateTime startedMovingThumbnail;
         private int movingThumbnailProgress;
 
-        private void Reset()
+        public Queue<MyCubeGrid> BlockReferenceRestoreQueue = new Queue<MyCubeGrid>();
+
+        public void Reset()
         {
             state = State.Inactive;
             grid = null;
@@ -111,7 +111,8 @@ namespace ClientPlugin.Logic
         {
             if (!IsInActiveSession())
             {
-                Reset();
+                if (state != State.Inactive)
+                    Reset();
                 return false;
             }
 
@@ -163,7 +164,6 @@ namespace ClientPlugin.Logic
                    MyCubeBuilder.Static != null &&
                    MyInput.Static != null &&
                    MySandboxGame.Static != null &&
-                   MyCoordinateSystem.Static != null &&
                    MyClipboardComponent.Static != null;
         }
 
@@ -199,6 +199,13 @@ namespace ClientPlugin.Logic
             if (firstBlock == null || grid == null)
                 return false;
 
+            if (firstBlock != null && Cfg.ClearBlockReferenceData.IsPressed(input))
+            {
+                ClearBlockReferenceData(firstBlock.CubeGrid);
+                Reset();
+                return true;
+            }
+
             if (input.IsNewLeftMousePressed())
             {
                 state = State.SelectingSecond;
@@ -229,6 +236,35 @@ namespace ClientPlugin.Logic
             }
 
             return false;
+        }
+
+        private void ClearBlockReferenceData(MyCubeGrid mainGrid)
+        {
+            if (mainGrid == null)
+                return;
+            
+            var messageBox = MyGuiSandbox.CreateMessageBox(
+                MyMessageBoxStyleEnum.Info,
+                MyMessageBoxButtonsType.YES_NO,
+                new StringBuilder("Are you sure to clear all block reference data\r\nfrom this grid and all connected subgrids?"),
+                new StringBuilder("Confirmation - Box Selector"),
+                callback: result => OnClearBlockReferenceDataConfirmed(result, mainGrid));
+
+            MyGuiSandbox.AddScreen(messageBox);
+        }
+
+        private void OnClearBlockReferenceDataConfirmed(MyGuiScreenMessageBox.ResultEnum result, MyCubeGrid mainGrid)
+        {
+            if (result != MyGuiScreenMessageBox.ResultEnum.YES)
+                return;
+
+            if (mainGrid == null)
+                return;
+
+            References.ClearBlockReferenceData(mainGrid);
+
+            var gridName = mainGrid.DisplayName ?? mainGrid.Name ?? mainGrid.EntityId.ToString();
+            MyAPIGateway.Utilities.ShowMessage("Sections", $"Block reference data has been cleared from this grid and all connected subgrids: {gridName}");
         }
 
         private const string ConfigurationHint = "\r\n\r\nYou can disable this confirmation in configuration.\r\nTo configure, press Ctrl-Alt-/ after closing this dialog.";
@@ -389,6 +425,8 @@ namespace ClientPlugin.Logic
 
         private void Copy(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -398,6 +436,8 @@ namespace ClientPlugin.Logic
 
         private void Cut(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -409,6 +449,8 @@ namespace ClientPlugin.Logic
 
         private void Delete(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -473,16 +515,15 @@ namespace ClientPlugin.Logic
 
                 case State.SelectingFirst:
                     ClearRenderData.Invoke(cubeBuilder, Array.Empty<object>());
-                    MyCoordinateSystem.Static.Visible = true;
                     if (firstBlock != null)
                         DrawBlock(firstBlock, Cfg.FirstColor);
-                    DrawHint("Select the first corner block", 2, x: 0.05f);
-                    DrawHint("ESC: Cancel", 3, x: 0.05f);
-                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0.05f);
+                    DrawHint("Select the first corner block", 1, x: 0f);
+                    DrawHint("ESC: Cancel", 2, x: 0f);
+                    DrawHint($"{Cfg.ClearBlockReferenceData}: Clear block reference data", 3, x: 0f);
+                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
                     break;
 
                 case State.SelectingSecond:
-                    MyCoordinateSystem.Static.Visible = true;
                     DrawBlock(firstBlock, Cfg.FirstColor);
                     if (secondBlock != null)
                     {
@@ -491,29 +532,27 @@ namespace ClientPlugin.Logic
                     }
 
                     DrawSize();
-                    DrawHint("Select the second corner block", 2, x: 0.05f);
-                    DrawHint("ESC: Cancel", 3, x: 0.05f);
-                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0.05f);
+                    DrawHint("Select the second corner block", 1, x: 0f);
+                    DrawHint("ESC: Cancel", 2, x: 0f);
+                    DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
                     break;
 
                 case State.Resizing:
-                    MyCoordinateSystem.Static.Visible = false;
                     DrawBox(Cfg.FinalBoxColor);
                     if (aimedBlock != null)
                         DrawBlock(aimedBlock, Cfg.AimedColor);
                     DrawSize();
                     DrawHint("Block rotation keys: Grow", 1, x: -0.1f);
                     DrawHint("+SHIFT to shrink the box", 2, x: -0.1f);
-                    DrawHint("R: Restore original box", 3, x: -0.1f);
+                    DrawHint($"{Cfg.ResetSelection}: Restore original box", 3, x: -0.1f);
                     DrawHint("Ctrl+Alt+/: Configure", 4, x: -0.1f);
                     DrawHint("LMB: Copy    RMB: Cut", 1, x: 0.14f);
-                    DrawHint("Backspace: Delete", 2, x: 0.14f);
-                    DrawHint("ENTER: Save as a Section blueprint", 3, x: 0.14f);
+                    DrawHint($"{Cfg.DeleteSelectedBlocks}: Delete", 2, x: 0.14f);
+                    DrawHint($"{Cfg.SaveSelectedBlocks}: Save as a Section blueprint", 3, x: 0.14f);
                     DrawHint("+CTRL to include intersecting blocks", 4, x: 0.14f);
                     break;
 
                 case State.TakingScreenshot:
-                    MyCoordinateSystem.Static.Visible = false;
                     DrawBox(Cfg.FinalBoxColor);
                     if (aimedBlock != null)
                         DrawBlock(aimedBlock, Cfg.AimedColor);
@@ -542,10 +581,7 @@ namespace ClientPlugin.Logic
                 return;
             }
 
-            if (Cfg.ShowHints)
-            {
-                DrawHint("Hold ALT to disable placement test", 1, 0f);
-            }
+            DrawHint("Hold ALT to disable placement test", 1, 0f);
         }
 
         private void DrawSize()
@@ -576,7 +612,7 @@ namespace ClientPlugin.Logic
             if (!Cfg.ShowHints)
                 return;
 
-            DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.4f + x);
+            DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.43f + x);
         }
 
         private void DrawText(string text, Color color, int lineNumber = 1, float scale = 1f, bool center = true, float x = 0.5f, float? y = null)
@@ -641,6 +677,8 @@ namespace ClientPlugin.Logic
                 grid.RemoveBlock(grid.GetCubeBlock(min), true);
             }
 
+            grid.RecalcBounds();
+            grid.RecalculateOwners();
             grid.Physics.AddDirtyArea(box.Min, box.Max);
         }
 
@@ -656,6 +694,8 @@ namespace ClientPlugin.Logic
 
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
+            new References(grid).Backup();
+
             var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
             if (gridBuilders.Count == 0)
                 return;
@@ -900,6 +940,35 @@ namespace ClientPlugin.Logic
             }
 
             return true;
+        }
+
+        public void TryPasteGridPostfix(List<MyCubeGrid> pastedGrids)
+        {
+            foreach (var pastedGrid in pastedGrids)
+            {
+                if (pastedGrid.Closed || !pastedGrid.InScene || pastedGrid.Physics == null)
+                    continue;
+
+                BlockReferenceRestoreQueue.Enqueue(pastedGrid);
+            }
+        }
+
+        public void PasteBlocksToGridPostfix(MyCubeGrid gridPastedOn)
+        {
+            BlockReferenceRestoreQueue.Enqueue(gridPastedOn);
+        }
+
+        public void Update()
+        {
+            if (!IsInActiveSession())
+                return;
+
+            var grids = new HashSet<MyCubeGrid>();
+            while (BlockReferenceRestoreQueue.Count != 0)
+                grids.Add(BlockReferenceRestoreQueue.Dequeue());
+
+            foreach (var grid in grids)
+                new References(grid).Restore();
         }
     }
 }

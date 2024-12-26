@@ -23,6 +23,7 @@ namespace ClientPlugin
         private bool fixPastePosition = true;
         private bool handleSubgrids = true;
         private bool disablePlacementTest = true;
+        private bool restoreToolbars = true;
 
         private bool showHints = true;
         private bool showSize = true;
@@ -44,6 +45,7 @@ namespace ClientPlugin
         private Binding resetSelection = new Binding(MyKeys.R);
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
         private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
+        private Binding clearBlockReferenceData = new Binding(MyKeys.OemMinus);
 
         // Not configurable yet
         public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
@@ -105,6 +107,13 @@ namespace ClientPlugin
         {
             get => disablePlacementTest;
             set => SetField(ref disablePlacementTest, value);
+        }
+
+        [Checkbox(description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)")]
+        public bool RestoreToolbars
+        {
+            get => restoreToolbars;
+            set => SetField(ref restoreToolbars, value);
         }
 
         [Separator("Overlay")]
@@ -234,6 +243,13 @@ namespace ClientPlugin
         {
             get => deleteSelectedBlocks;
             set => SetField(ref deleteSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Clear block reference data")]
+        public Binding ClearBlockReferenceData
+        {
+            get => clearBlockReferenceData;
+            set => SetField(ref clearBlockReferenceData, value);
         }
 
         #endregion

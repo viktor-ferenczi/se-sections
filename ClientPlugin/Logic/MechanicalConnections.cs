@@ -12,6 +12,8 @@ namespace ClientPlugin.Logic
         private readonly HashSet<MyCubeGrid> grids = new HashSet<MyCubeGrid>();
         private readonly HashSet<MechanicalConnection> mechanicalConnections = new HashSet<MechanicalConnection>();
 
+        public IEnumerable<MyCubeGrid> IterGrids => grids.AsEnumerable();
+        
         public MechanicalConnections(MyCubeGrid mainGrid)
         {
             WalkSubgrids(mainGrid);

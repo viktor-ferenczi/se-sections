@@ -8,7 +8,7 @@ namespace ClientPlugin.Patches
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
     // ReSharper disable once UnusedType.Global
-    public class MyBlueprintUtilsPatch
+    public static class MyBlueprintUtilsPatch
     {
         [HarmonyPostfix]
         [HarmonyPatch(nameof(MyBlueprintUtils.SaveToDisk))]
