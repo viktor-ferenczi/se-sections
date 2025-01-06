@@ -166,7 +166,7 @@ namespace ClientPlugin
             set => SetField(ref textShadowOffset, value);
         }
 
-        [Color(hasAlpha: true, description: "Box size text color")]
+        [Color(hasAlpha: true, description: "Text shadow color")]
         public Color TextShadowColor
         {
             get => textShadowColor;
