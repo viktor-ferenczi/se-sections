@@ -1,7 +1,6 @@
 using Sandbox.Graphics.GUI;
 using System;
 using System.Collections.Generic;
-using VRage.Utils;
 using VRageMath;
 
 namespace ClientPlugin.Settings.Elements
