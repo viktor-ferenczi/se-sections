@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
-using Sandbox.Game.Gui;
 
 namespace ClientPlugin.Logic
 {
@@ -67,6 +65,7 @@ namespace ClientPlugin.Logic
             foreach (var reference in referencesByBlock.Values)
             {
                 reference.Restore(referencesByBlock, referencesByGuid);
+                reference.TerminalBlock.RaisePropertiesChanged();
             }
         }
 
