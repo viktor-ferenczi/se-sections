@@ -39,10 +39,12 @@ namespace ClientPlugin.Logic
                 case MyPathRecorderBlock b:
                     // AI Recorder block
                     return new PathRecorder(b);
+
+                case MyButtonPanel b:
+                    return new ButtonPanel(b);
                 
                 case MyDefensiveCombatBlock _:
                 case MySensorBlock _:
-                case MyButtonPanel _:
                 case MyFlightMovementBlock _:
                 case MyShipController _:
                 case MyTimerBlock _:
@@ -175,7 +177,7 @@ namespace ClientPlugin.Logic
     public class RemoteControl : ToolbarOwner
     {
         private const string GroupName = "RemoteControl";
-        private MyRemoteControl RemoteControlBlock => (MyRemoteControl)TerminalBlock; 
+        private MyRemoteControl Block => (MyRemoteControl)TerminalBlock; 
 
         public RemoteControl(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -186,7 +188,7 @@ namespace ClientPlugin.Logic
             base.Backup(referenceByBlock);
             
             var group = GetOrCreateGroup(GroupName);
-            TryBackupBlockId(referenceByBlock, group, "Camera", RemoteControlBlock.GetBoundCameraSync().Value);
+            TryBackupBlockId(referenceByBlock, group, "Camera", Block.GetBoundCameraSync().Value);
         }
 
         public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
@@ -196,10 +198,9 @@ namespace ClientPlugin.Logic
             if (!Groups.TryGetValue(GroupName, out var group)) 
                 return;
 
-            if (TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "Camera", RemoteControlBlock.GetBoundCameraSync().Value, out var cameraBlockId))
+            if (TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "Camera", Block.GetBoundCameraSync().Value, out var cameraBlockId))
             {
-                RemoteControlBlock.GetBoundCameraSync().Value = cameraBlockId;
-                RemoteControlBlock.RaisePropertiesChanged();
+                Block.GetBoundCameraSync().Value = cameraBlockId;
             }
         }
     }
@@ -207,7 +208,7 @@ namespace ClientPlugin.Logic
     public class EventController : ToolbarOwner
     {
         private const string GroupName = "EventController";
-        private MyEventControllerBlock EventControllerBlock => (MyEventControllerBlock)TerminalBlock; 
+        private MyEventControllerBlock Block => (MyEventControllerBlock)TerminalBlock; 
 
         public EventController(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -218,7 +219,7 @@ namespace ClientPlugin.Logic
             base.Backup(referenceByBlock);
             
             var group = GetOrCreateGroup(GroupName);
-            var selectedBlocks = EventControllerBlock.GetSelectedBlocks();
+            var selectedBlocks = Block.GetSelectedBlocks();
             var i = 0;
             foreach (var blockId in selectedBlocks.Keys)
             {
@@ -236,7 +237,7 @@ namespace ClientPlugin.Logic
             if (group.Count == 0)
                 return;
 
-            var selectedBlockIds = EventControllerBlock.GetSelectedBlockIds();
+            var selectedBlockIds = Block.GetSelectedBlockIds();
             var blockIdsToRemove = selectedBlockIds?.Where(blockId => !referenceByBlock.ContainsKey(blockId)).ToList();
             
             var blockIdsToAdd = new List<long>(group.Count);
@@ -252,10 +253,10 @@ namespace ClientPlugin.Logic
             }
 
             if (blockIdsToRemove != null && blockIdsToRemove.Count != 0)
-                EventControllerBlock.RemoveBlocks(blockIdsToRemove);
+                Block.RemoveBlocks(blockIdsToRemove);
             
             if (blockIdsToAdd.Count != 0)
-                EventControllerBlock.AddBlocks(blockIdsToAdd);
+                Block.AddBlocks(blockIdsToAdd);
         }
     }
 
@@ -263,7 +264,7 @@ namespace ClientPlugin.Logic
     {
         private const string TurretControlGroupName = "Turret";
         private const string ToolsGroupName = "Tools";
-        private IMyTurretControlBlock TurretControlBlock => (IMyTurretControlBlock)TerminalBlock; 
+        private IMyTurretControlBlock Block => (IMyTurretControlBlock)TerminalBlock; 
 
         public TurretController(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -272,13 +273,13 @@ namespace ClientPlugin.Logic
         public override void Backup(Dictionary<long, Reference> referenceByBlock)
         {
             var group = GetOrCreateGroup(TurretControlGroupName);
-            TryBackupBlockId(referenceByBlock, group, "AzimuthRotor", TurretControlBlock.AzimuthRotor?.EntityId ?? 0);
-            TryBackupBlockId(referenceByBlock, group, "ElevationRotor", TurretControlBlock.ElevationRotor?.EntityId ?? 0);
-            TryBackupBlockId(referenceByBlock, group, "Camera", TurretControlBlock.Camera?.EntityId ?? 0);
+            TryBackupBlockId(referenceByBlock, group, "AzimuthRotor", Block.AzimuthRotor?.EntityId ?? 0);
+            TryBackupBlockId(referenceByBlock, group, "ElevationRotor", Block.ElevationRotor?.EntityId ?? 0);
+            TryBackupBlockId(referenceByBlock, group, "Camera", Block.Camera?.EntityId ?? 0);
             
             group = GetOrCreateGroup(ToolsGroupName);
             var tools = new List<IngameIMyFunctionalBlock>();
-            TurretControlBlock.GetTools(tools);
+            Block.GetTools(tools);
             var i = 0;
             foreach (var tool in tools)
             {
@@ -290,20 +291,20 @@ namespace ClientPlugin.Logic
         {
             if (Groups.TryGetValue(TurretControlGroupName, out var group))
             {
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "AzimuthRotor", TurretControlBlock.AzimuthRotor?.EntityId ?? 0, out var azimuthBlockId))
-                    TurretControlBlock.AzimuthRotor = (MyMotorStator)referenceByBlock[azimuthBlockId].TerminalBlock;
+                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "AzimuthRotor", Block.AzimuthRotor?.EntityId ?? 0, out var azimuthBlockId))
+                    Block.AzimuthRotor = (MyMotorStator)referenceByBlock[azimuthBlockId].TerminalBlock;
 
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "ElevationRotor", TurretControlBlock.ElevationRotor?.EntityId ?? 0, out var elevationBlockId))
-                    TurretControlBlock.ElevationRotor = (MyMotorStator)referenceByBlock[elevationBlockId].TerminalBlock;
+                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "ElevationRotor", Block.ElevationRotor?.EntityId ?? 0, out var elevationBlockId))
+                    Block.ElevationRotor = (MyMotorStator)referenceByBlock[elevationBlockId].TerminalBlock;
 
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "Camera", TurretControlBlock.Camera?.EntityId ?? 0, out var cameraBlockId))
-                    TurretControlBlock.Camera = (MyCameraBlock)referenceByBlock[cameraBlockId].TerminalBlock;
+                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "Camera", Block.Camera?.EntityId ?? 0, out var cameraBlockId))
+                    Block.Camera = (MyCameraBlock)referenceByBlock[cameraBlockId].TerminalBlock;
             }
 
             if (Groups.TryGetValue(ToolsGroupName, out group) && group.Count != 0)
             {
                 var tools = new List<IngameIMyFunctionalBlock>();
-                TurretControlBlock.GetTools(tools);
+                Block.GetTools(tools);
                 var blockIdsToAdd = new List<IngameIMyFunctionalBlock>(group.Count);
                 var blockIdsToRemove = new List<IngameIMyFunctionalBlock>(group.Count);
                 foreach (var guid in group.Values)
@@ -323,8 +324,8 @@ namespace ClientPlugin.Logic
                 if (blockIdsToAdd.Count == 0) 
                     return;
 
-                TurretControlBlock.RemoveTools(blockIdsToRemove.Take(blockIdsToAdd.Count).ToList());
-                TurretControlBlock.AddTools(blockIdsToAdd);
+                Block.RemoveTools(blockIdsToRemove.Take(blockIdsToAdd.Count).ToList());
+                Block.AddTools(blockIdsToAdd);
             }
         }
     }
@@ -332,7 +333,7 @@ namespace ClientPlugin.Logic
     public class OffensiveCombat : Reference
     {
         private const string WeaponsGroupName = "Weapons";
-        private MyOffensiveCombatBlock OffensiveCombatBlock => (MyOffensiveCombatBlock)TerminalBlock;
+        private MyOffensiveCombatBlock Block => (MyOffensiveCombatBlock)TerminalBlock;
 
         public OffensiveCombat(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -340,7 +341,7 @@ namespace ClientPlugin.Logic
         
         public override void Backup(Dictionary<long, Reference> referenceByBlock)
         {
-            if (!OffensiveCombatBlock.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+            if (!Block.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
                 return;
 
             var group = GetOrCreateGroup(WeaponsGroupName);
@@ -358,7 +359,7 @@ namespace ClientPlugin.Logic
             if (!Groups.TryGetValue(WeaponsGroupName, out var group))
                 return;
             
-            if (!OffensiveCombatBlock.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+            if (!Block.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
                 return;
 
             var selectedWeapons = new List<long>();
@@ -378,14 +379,16 @@ namespace ClientPlugin.Logic
             }
 
             if (modified)
+            {
                 component.SetSelectedWeapons(selectedWeapons);
+            }
         }
     }
     
     public class PathRecorder : Reference
     {
         private const string WaypointGroupName = "Waypoint:{0}";
-        private MyPathRecorderBlock PathRecorderBlock => (MyPathRecorderBlock)TerminalBlock;
+        private MyPathRecorderBlock Block => (MyPathRecorderBlock)TerminalBlock;
 
         public PathRecorder(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -393,7 +396,7 @@ namespace ClientPlugin.Logic
         
         public override void Backup(Dictionary<long, Reference> referenceByBlock)
         {
-            if (!PathRecorderBlock.GetComponent(out MyPathRecorderComponent component))
+            if (!Block.GetComponent(out MyPathRecorderComponent component))
                 return;
 
             var i = 0;
@@ -406,7 +409,7 @@ namespace ClientPlugin.Logic
 
         public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
         {
-            if (!PathRecorderBlock.GetComponent(out MyPathRecorderComponent component))
+            if (!Block.GetComponent(out MyPathRecorderComponent component))
                 return;
 
             var i = 0;
@@ -416,6 +419,54 @@ namespace ClientPlugin.Logic
                     continue;
                 
                 ToolbarOwner.RestoreToolbar(referenceByBlock, referenceByGuid, group, waypoint.Toolbar);
+            }
+        }
+    }
+    
+    public class ButtonPanel : ToolbarOwner
+    {
+        private const string GroupName = "ButtonPanel";
+        private MyButtonPanel Block => (MyButtonPanel)TerminalBlock; 
+
+        public ButtonPanel(MyTerminalBlock terminalBlock) : base(terminalBlock)
+        {
+        }
+        
+        public override void Backup(Dictionary<long, Reference> referenceByBlock)
+        {
+            base.Backup(referenceByBlock);
+            
+            var group = GetOrCreateGroup(GroupName);
+            var builder = (MyObjectBuilder_ButtonPanel)Block.GetObjectBuilderCubeBlock();
+            foreach (var pos in builder.CustomButtonNames.Dictionary.Keys)
+            {
+                var customName = builder.CustomButtonNames[pos];
+                if (customName != null)
+                {
+                    group[$"Name{pos}"] = customName;
+                }
+            }
+        }
+
+        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        {
+            base.Restore(referenceByBlock, referenceByGuid);
+            
+            if (!Groups.TryGetValue(GroupName, out var group))
+                return;
+
+            if (group.Count == 0)
+                return;
+
+            foreach (var (key, value) in group)
+            {
+                if (key.StartsWith("Name"))
+                {
+                    if (int.TryParse(key.Substring(4), out var pos))
+                    {
+                        Block.SetCustomButtonName(value, pos);
+                    }
+                }
             }
         }
     }

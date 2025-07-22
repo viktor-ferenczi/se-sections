@@ -65,6 +65,7 @@ namespace ClientPlugin.Logic
             foreach (var reference in referencesByBlock.Values)
             {
                 reference.Restore(referencesByBlock, referencesByGuid);
+                reference.TerminalBlock.RaisePropertiesChanged();
             }
         }
 
