@@ -234,7 +234,7 @@ Space Engineers and Space Engineers 2 are trademarks of Keen Software House s.r.
 ## Want to know more?
 
 - [SE Mods Discord](https://discord.gg/PYPFPGf3Ca) FAQ, Troubleshooting, Support, Bug Reports, Discussion
-- [Pulsar Discord](https://discord.gg/6ETGRU3CzR) Everything about plugins
+- [Pulsar Discord](https://discord.gg/z8ZczP2YZY) Everything about plugins
 - [YouTube Channel](https://www.youtube.com/channel/UCc5ar3cW9qoOgdBb1FM_rxQ)
 - [Source code](https://github.com/viktor-ferenczi/se-sections)
 - [Bug reports](https://discord.gg/x3Z8Ug5YkQ)
