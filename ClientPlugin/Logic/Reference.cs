@@ -330,7 +330,7 @@ namespace ClientPlugin.Logic
         }
     }
     
-    public class OffensiveCombat : Reference
+    public class OffensiveCombat : ToolbarOwner
     {
         private const string WeaponsGroupName = "Weapons";
         private MyOffensiveCombatBlock Block => (MyOffensiveCombatBlock)TerminalBlock;
@@ -338,10 +338,17 @@ namespace ClientPlugin.Logic
         public OffensiveCombat(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
         }
-        
+
+        private bool TryGetComponent(out MyOffensiveWithWeaponsCombatComponent component)
+        {
+            return Block.Components.TryGet(out component);
+        }
+
         public override void Backup(Dictionary<long, Reference> referenceByBlock)
         {
-            if (!Block.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+            base.Backup(referenceByBlock);
+
+            if (!TryGetComponent(out var component))
                 return;
 
             var group = GetOrCreateGroup(WeaponsGroupName);
@@ -356,10 +363,12 @@ namespace ClientPlugin.Logic
 
         public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
         {
+            base.Restore(referenceByBlock, referenceByGuid);
+
             if (!Groups.TryGetValue(WeaponsGroupName, out var group))
                 return;
-            
-            if (!Block.Components.TryGet<MyOffensiveCombatCircleOrbit>(out var component))
+
+            if (!TryGetComponent(out var component))
                 return;
 
             var selectedWeapons = new List<long>();
@@ -370,10 +379,10 @@ namespace ClientPlugin.Logic
             {
                 if (!referenceByGuid.TryGetValue(guid, out var reference))
                     continue;
-                
+
                 if (selectedWeapons.Contains(reference.TerminalBlock.EntityId))
                     continue;
-                
+
                 selectedWeapons.Add(reference.TerminalBlock.EntityId);
                 modified = true;
             }
