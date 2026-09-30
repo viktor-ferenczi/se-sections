@@ -160,6 +160,34 @@ namespace ClientPlugin
             set => SetField(ref hiddenBlockSaturation, MathHelper.Clamp(value, 0f, 100f));
         }
 
+        [Checkbox(
+            description: "Handle subgrids together with mechanical connection blocks (the ones which would be disconnected)"
+        )]
+        public bool HandleSubgrids
+        {
+            get => handleSubgrids;
+            set => SetField(ref handleSubgrids, value);
+        }
+
+        [Checkbox(
+            description: "Holding Alt disables the placement test while pasting, use this only with great care"
+        )]
+        public bool DisablePlacementTest
+        {
+            get => disablePlacementTest;
+            set => SetField(ref disablePlacementTest, value);
+        }
+
+        [Checkbox(
+            description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)"
+        )]
+        public bool RestoreToolbars
+        {
+            get => restoreToolbars;
+            set => SetField(ref restoreToolbars, value);
+        }
+
+        [Separator("Auto-hide")]
         [XmlIgnore]
         [Checkbox(
             label: "Auto-hide blocks",
@@ -188,31 +216,25 @@ namespace ClientPlugin
                 );
         }
 
-        [Checkbox(
-            description: "Handle subgrids together with mechanical connection blocks (the ones which would be disconnected)"
-        )]
-        public bool HandleSubgrids
+        [Keybind(description: "Toggle auto-hide blocks")]
+        public Binding ToggleAutoHide
         {
-            get => handleSubgrids;
-            set => SetField(ref handleSubgrids, value);
+            get => toggleAutoHide;
+            set => SetField(ref toggleAutoHide, value);
         }
 
-        [Checkbox(
-            description: "Holding Alt disables the placement test while pasting, use this only with great care"
-        )]
-        public bool DisablePlacementTest
+        [Keybind(description: "Decrease auto-hide radius by 0.1 meter")]
+        public Binding DecreaseAutoHideRadius
         {
-            get => disablePlacementTest;
-            set => SetField(ref disablePlacementTest, value);
+            get => decreaseAutoHideRadius;
+            set => SetField(ref decreaseAutoHideRadius, value);
         }
 
-        [Checkbox(
-            description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)"
-        )]
-        public bool RestoreToolbars
+        [Keybind(description: "Increase auto-hide radius by 0.1 meter")]
+        public Binding IncreaseAutoHideRadius
         {
-            get => restoreToolbars;
-            set => SetField(ref restoreToolbars, value);
+            get => increaseAutoHideRadius;
+            set => SetField(ref increaseAutoHideRadius, value);
         }
 
         [Separator("Overlay")]
@@ -411,27 +433,6 @@ namespace ClientPlugin
         {
             get => restoreAllCutaways;
             set => SetField(ref restoreAllCutaways, value);
-        }
-
-        [Keybind(description: "Toggle auto-hide blocks")]
-        public Binding ToggleAutoHide
-        {
-            get => toggleAutoHide;
-            set => SetField(ref toggleAutoHide, value);
-        }
-
-        [Keybind(description: "Decrease auto-hide radius by 0.1 meter")]
-        public Binding DecreaseAutoHideRadius
-        {
-            get => decreaseAutoHideRadius;
-            set => SetField(ref decreaseAutoHideRadius, value);
-        }
-
-        [Keybind(description: "Increase auto-hide radius by 0.1 meter")]
-        public Binding IncreaseAutoHideRadius
-        {
-            get => increaseAutoHideRadius;
-            set => SetField(ref increaseAutoHideRadius, value);
         }
 
         #endregion
