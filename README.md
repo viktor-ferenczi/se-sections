@@ -103,8 +103,8 @@ All these keys can be rebound.
 
 Treated blocks keep working and stay attached to the ship, but their collision
 is disabled so the character can fly through them. **Hidden block opacity**
-defaults to **10%**; zero makes them invisible. **Hidden block saturation**
-defaults to **100%**; zero makes their displayed color gray. These settings change
+defaults to **25%**; zero makes them invisible. **Hidden block saturation**
+defaults to **50%**; zero makes their displayed color gray. These settings change
 rendering without changing the saved block colors.
 
 **Include intersecting blocks** defaults to off. With it off, a block's entire

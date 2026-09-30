@@ -25,8 +25,8 @@ namespace ClientPlugin
         private bool disablePlacementTest = true;
         private bool restoreToolbars = true;
         private bool includeIntersectingBlocks;
-        private float hiddenBlockOpacity = 10f;
-        private float hiddenBlockSaturation = 100f;
+        private float hiddenBlockOpacity = 25f;
+        private float hiddenBlockSaturation = 50f;
         private float autoHideRadius = 7.5f;
         private bool autoHideBlocks;
 
