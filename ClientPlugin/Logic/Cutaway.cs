@@ -4,9 +4,11 @@ using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.GUI;
+using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using VRage.Audio;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRageMath;
 
@@ -19,6 +21,17 @@ namespace ClientPlugin.Logic
             new ConcurrentDictionary<MySlimBlock, HiddenBlock>();
 
         public static bool IsHidden(MySlimBlock block) => Hidden.ContainsKey(block);
+
+        public static bool CanDisablePhysics =>
+            MySession.Static != null
+            && CutawayPhysics.IsAllowed(
+                Sync.MultiplayerActive,
+                Sync.IsServer,
+                MySession.Static.OnlineMode == MyOnlineModeEnum.FRIENDS
+            );
+
+        public static bool IsCollisionHidden(MySlimBlock block) =>
+            CanDisablePhysics && IsHidden(block);
 
         public static Vector3 HiddenColor(MySlimBlock block)
         {
@@ -50,6 +63,7 @@ namespace ClientPlugin.Logic
                 && !force
                 && AutoHideEnabled
                 && IsAllowed
+                && CanDisablePhysics
                 && CharacterIntersectsHiddenBlock()
             )
             {
@@ -198,14 +212,15 @@ namespace ClientPlugin.Logic
 
         private static bool HideBlock(MySlimBlock block)
         {
-            var state = new HiddenBlock(block.Dithering, block.CubeGrid);
+            var state = new HiddenBlock(block.Dithering, block.CubeGrid, CanDisablePhysics);
             state.CaptureEntity(block.FatBlock);
             if (!Hidden.TryAdd(block, state))
                 return false;
             block.Dithering = Config.Current.HiddenBlockOpacity / 100f - 1f;
             block.UpdateVisual(false);
             RefreshVisual(block);
-            block.CubeGrid.Physics?.AddDirtyArea(block.Min, block.Max);
+            if (state.DisablePhysics)
+                block.CubeGrid.Physics?.AddDirtyArea(block.Min, block.Max);
             return true;
         }
 
@@ -282,7 +297,8 @@ namespace ClientPlugin.Logic
                 return false;
             block.Dithering = state.Dithering;
             block.UpdateVisual(false);
-            owner.Physics?.AddDirtyArea(block.Min, block.Max);
+            if (state.DisablePhysics)
+                owner.Physics?.AddDirtyArea(block.Min, block.Max);
             return true;
         }
 
@@ -341,6 +357,13 @@ namespace ClientPlugin.Logic
                     RestoreBlock(block);
                     continue;
                 }
+                if (entry.Value.DisablePhysics != CanDisablePhysics)
+                {
+                    // Changing lobby access also changes whether this mask may affect physics.
+                    RestoreBlock(block);
+                    HideBlock(block);
+                    continue;
+                }
                 // Doors and other animated blocks can recreate or re-enable their subparts.
                 var dithering = Config.Current.HiddenBlockOpacity / 100f - 1f;
                 if (
@@ -360,6 +383,7 @@ namespace ClientPlugin.Logic
         {
             public readonly float Dithering;
             public readonly MyCubeGrid Grid;
+            public readonly bool DisablePhysics;
             public float Saturation = Config.Current.HiddenBlockSaturation;
             private readonly Dictionary<MyEntity, bool> visibility =
                 new Dictionary<MyEntity, bool>();
@@ -370,10 +394,11 @@ namespace ClientPlugin.Logic
             private readonly Dictionary<MyEntity, Vector3> colors =
                 new Dictionary<MyEntity, Vector3>();
 
-            public HiddenBlock(float dithering, MyCubeGrid grid)
+            public HiddenBlock(float dithering, MyCubeGrid grid, bool disablePhysics)
             {
                 Dithering = dithering;
                 Grid = grid;
+                DisablePhysics = disablePhysics;
             }
 
             public void CaptureEntity(MyEntity entity)
@@ -389,7 +414,8 @@ namespace ClientPlugin.Logic
                 transparency.Add(entity, entity.Render.Transparency);
                 colors.Add(entity, entity.Render.ColorMaskHsv);
                 if (
-                    entity.Physics is Sandbox.Engine.Physics.MyPhysicsBody body
+                    DisablePhysics
+                    && entity.Physics is Sandbox.Engine.Physics.MyPhysicsBody body
                     && !physics.ContainsKey(body)
                 )
                     physics.Add(body, body.Enabled);
@@ -413,7 +439,7 @@ namespace ClientPlugin.Logic
                     entity.Render.Transparency = dithering;
                     entity.Render.UpdateTransparency();
                 }
-                if (entity.Physics is Sandbox.Engine.Physics.MyPhysicsBody body)
+                if (DisablePhysics && entity.Physics is Sandbox.Engine.Physics.MyPhysicsBody body)
                 {
                     if (!physics.ContainsKey(body))
                         physics.Add(body, body.Enabled);

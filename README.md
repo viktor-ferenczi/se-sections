@@ -6,10 +6,6 @@
 
 [![Watch the video](doc/Thumbnail.png)](https://www.youtube.com/watch?v=W0S-wIaIZ80)
 
-This is an implementation of a publicly announced Space Engineers 2 feature
-for the current version of the game. It is so useful, that I could not stand
-not implementing it. Sorry. :)
-
 For support please [join the SE Mods Discord](https://discord.gg/PYPFPGf3Ca).
 
 Please consider supporting my work on [Patreon](https://www.patreon.com/semods) or one time via [PayPal](https://www.paypal.com/paypalme/vferenczi/).
@@ -36,6 +32,19 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 Section editing works in creative mode, or in survival with creative tools
 enabled. Multiplayer section editing runs on the host. Cutaways can also run on
 multiplayer clients under the permissions described below.
+
+### New in 1.3.5
+
+Edit live ships with temporary cutaways and optional auto-hide around your
+character. Hidden blocks remain functional and attached to the ship. Build a
+cutaway in several steps with the existing selection box, adjust its appearance,
+and restore it when finished. In single-player, and on the host of a Friends
+session, hidden blocks also lose collision so you can reach the ship's interior.
+
+The branch also adds a shared intersection setting with Ctrl inversion, movable
+selection boxes, recovery of fully hidden grids, and compact selection hints
+above the toolbar. Ctrl-clicking a settings slider opens numeric entry with
+the slider's configured increment.
 
 ### Selecting grid sections
 
@@ -101,8 +110,15 @@ build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
 
-Treated blocks keep working and stay attached to the ship, but their collision
-is disabled so the character can fly through them. **Hidden block opacity**
+*Screenshot placeholder: a live ship with a cutaway built from several boxes,
+with the selection brush and hide/show hints visible.*
+
+Treated blocks keep working and stay attached to the ship. In single-player,
+their collision is disabled so the character can fly through them. Multiplayer
+hiding changes visuals only, except when the plugin runs on the host of a
+**Friends** session, where collision removal is also enabled. On that host,
+physics changes affect the server simulation; other players still keep their
+normal view. **Hidden block opacity**
 defaults to **25%**; zero makes them invisible. **Hidden block saturation**
 defaults to **50%**; zero makes their displayed color gray. These settings change
 rendering without changing the saved block colors.
@@ -120,6 +136,14 @@ and solid.
 Cutaways stay in memory and reset when the world unloads or reloads; they are
 never stored in saves or blueprints.
 
+If you hide a whole grid, use **Ctrl + Shift + J** or **Show all blocks on all
+grids** in the configuration. Both clear the masks without needing to aim at
+the hidden ship. They also turn off auto-hide, subject to the shutdown check
+described below.
+
+*Screenshot placeholder: the configuration's Show all blocks on all grids
+button and the ship restored to full visibility.*
+
 In multiplayer, cutaways require creative mode or admin rights. Non-admin
 players can apply them only to grids they own; admins can apply them to any grid.
 Each client keeps its own mask, so other players keep their normal view. In
@@ -129,7 +153,8 @@ offline survival, creative tools or admin rights are required.
 
 **Auto-hide blocks** is off by default. Turn it on in the configuration or with
 **Ctrl + Alt + \**. Blocks whose grid-aligned cube bounds touch a sphere around
-the character become transparent and lose collision. They return to normal as
+the character become transparent. Collision is removed in single-player and
+on a Friends session's host only. They return to normal as
 you move away. The same grid ownership and creative/admin permissions apply.
 
 The default **Auto-hide radius** is **7.5 m**. Set it from **0 to 50 m**, in
@@ -145,11 +170,18 @@ hide them while they touch the sphere. **Show all blocks on all grids** and
 **Ctrl + Shift + J** turn auto-hide off and clear all manual masks. World unload
 also turns it off. The radius and key bindings are saved; the on/off state is not.
 
-Auto-hide cannot be turned off while the character's body overlaps an
+When collision removal is enabled, auto-hide cannot be turned off while the
+character's body overlaps an
 automatically hidden block's grid-aligned bounds. The game plays the block
 placement refusal sound and asks you to move clear first. This also applies
 to the show-all controls, so they cannot restore collision through the
 character. World unload and permission-loss cleanup still restore blocks.
+
+In visual-only multiplayer, turning off auto-hide is allowed even when the
+character overlaps a hidden block, since it does not restore collision.
+
+*Screenshot placeholder: auto-hide revealing the interior around the character,
+with the radius setting shown.*
 
 ### Subgrid support
 
@@ -285,13 +317,29 @@ Alternatively you can open the settings by double-clicking on this plugin in the
 dialog of Pulsar, then clicking **Settings** in the dialog opened.
 The configuration can be changed anytime without having to restart the game.
 
+The **Features** section contains **Include intersecting blocks**, hidden-block
+opacity and saturation, and the show-all control. **Auto-hide** follows Features,
+before **Overlay**, and contains its on/off control, radius, and three key bindings.
+Auto-hide can be enabled only in a loaded world where hiding is allowed.
+
+**Ctrl-click** a slider to enter an exact value. The radius accepts 0.1 m
+increments; confirmation applies the value and cancellation leaves it unchanged.
+The opacity and saturation defaults are 25% and 50%. Existing saved settings
+keep their values.
+
+*Screenshot placeholder: the updated Features, Auto-hide, and Overlay sections,
+plus the Ctrl-click numeric-entry dialog.*
+
 ![Configuration](doc/ConfigDialog.png "Config Dialog")
 
 ## Known issues and limitations
 
 - **No support for symmetry mode.** This is planned for version 1.4.0.
 - Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. **Play with it!**
-- This plugin is **largely untested in survival** (only with creative mode tools enabled) and is disabled in multiplayer (even if you're an admin). It should work if you're playing on the server of a "Friends" multiplayer game, but this mode has **not** been tested yet.
+- Survival testing has used creative tools. Multiplayer section editing requires
+  the plugin on the host. Cutaways and auto-hide can run on permitted clients,
+  but remove collision only in single-player or on a Friends session's host.
+  Real multiplayer integration still needs testing with multiple clients.
 
 ## Troubleshooting
 

@@ -30,7 +30,7 @@ namespace ClientPlugin.Patches
             IDictionary<Vector3I, HkMassElement> massResults
         )
         {
-            if (!Cutaway.IsHidden(block))
+            if (!Cutaway.IsCollisionHidden(block))
                 return true;
 
             // Skip shape generation before armor segmentation, but retain the real ship's mass.
