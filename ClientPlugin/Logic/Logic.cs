@@ -717,24 +717,24 @@ namespace ClientPlugin.Logic
                     if (aimedBlock != null)
                         DrawBlock(aimedBlock, Cfg.AimedColor);
                     DrawSize();
-                    DrawHint("Block rotation keys: Grow", 1, x: -0.1f);
-                    DrawHint("+SHIFT to shrink the box", 2, x: -0.1f);
-                    DrawHint($"{Cfg.ResetSelection}: Restore original box", 3, x: -0.1f);
-                    DrawHint("Ctrl+Alt+/: Configure", 4, x: -0.1f);
+                    DrawHint("Rotation: Grow", 1, x: -0.1f);
+                    DrawHint("SHIFT+rotation: Shrink", 2, x: -0.1f);
+                    DrawHint("ALT+rotation: Move", 3, x: -0.1f);
+                    DrawHint($"{Cfg.ResetSelection}: Reset / ESC: Leave", 4, x: -0.1f);
+                    DrawHint("Ctrl+Alt+/: Configure", 5, x: -0.1f);
                     DrawHint("LMB: Copy    RMB: Cut", 1, x: 0.14f);
-                    DrawHint($"{Cfg.DeleteSelectedBlocks}: Delete", 2, x: 0.14f);
-                    DrawHint($"{Cfg.SaveSelectedBlocks}: Save as a Section blueprint", 3, x: 0.14f);
-                    DrawHint("+CTRL: Invert Include intersecting blocks", 4, x: 0.14f);
                     DrawHint(
-                        $"{Cfg.HideSelectedBlocks}: Hide    {Cfg.ShowSelectedBlocks}: Show    ALT+rotation: Move box",
-                        5,
+                        $"{Cfg.DeleteSelectedBlocks}: Delete    {Cfg.SaveSelectedBlocks}: Blueprint",
+                        2,
                         x: 0.14f
                     );
                     DrawHint(
-                        $"ESC: Leave box    {Cfg.RestoreAllCutaways}: Restore all",
-                        6,
+                        $"{Cfg.HideSelectedBlocks}: Hide    {Cfg.ShowSelectedBlocks}: Show",
+                        3,
                         x: 0.14f
                     );
+                    DrawHint("CTRL: Invert intersection setting", 4, x: 0.14f);
+                    DrawHint($"{Cfg.RestoreAllCutaways}: Restore all", 5, x: 0.14f);
                     break;
 
                 case State.TakingScreenshot:
@@ -816,7 +816,7 @@ namespace ClientPlugin.Logic
             if (!Cfg.ShowHints)
                 return;
 
-            DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.43f + x);
+            DrawText(text, Cfg.HintColor, center: false, x: 0.43f + x, y: 0.03f * (lineNumber - 1));
         }
 
         private void DrawText(
