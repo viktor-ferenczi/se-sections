@@ -33,8 +33,9 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 - [Demo Video](https://www.youtube.com/watch?v=W0S-wIaIZ80)
 - [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
-This plugin is designed for offline ship design. It works only in creative mode.
-It is availabel in survival mode only if the creative mode tools are enabled for the player.
+Section editing works in creative mode, or in survival with creative tools
+enabled. Multiplayer section editing runs on the host. Cutaways can also run on
+multiplayer clients under the permissions described below.
 
 ### Selecting grid sections
 
@@ -77,8 +78,72 @@ Once the selection is good, you can do these operations on the selected blocks:
 
 By default, only the blocks fully enclosed in the selection box are operated on.
 
-You can hold down the **Ctrl** key while using the above section operations to include
-the blocks intersecting the surface of the selection box without being fully contained.
+The **Include intersecting blocks** setting includes blocks whose bounding boxes
+overlap the selection without being fully contained. Hold **Ctrl** to invert that
+setting for the operation.
+
+### Cutaways for editing live ships
+
+Select a box with **NumPad 0** and the two corner clicks, just as for copying or
+cutting a section. Then use:
+
+- **H**: Add the selected blocks to this grid's cutaway mask.
+- **J**: Remove the selected blocks from the mask, making them solid again.
+- **Alt + block rotation keys**: Move the box. The existing rotation keys grow
+  it, and **Shift** shrinks it.
+- **Alt + H**: Reset the selected grid to all visible. This also works while
+  choosing the first corner, when aiming at a visible part of the grid.
+- **Ctrl + Shift + J**: Reset all grids to all visible, including a completely
+  hidden grid. The configuration also has a **Show all blocks on all grids** button.
+
+The box stays active after H or J. Move or resize it, then apply another box to
+build up or remove parts of the mask. Moving the box does not change the mask
+until you apply it. **Escape** leaves the selection and keeps the cutaway.
+All these keys can be rebound.
+
+Treated blocks keep working and stay attached to the ship, but their collision
+is disabled so the character can fly through them. **Hidden block opacity**
+defaults to **10%**; zero makes them invisible. **Hidden block saturation**
+defaults to **100%**; zero makes their displayed color gray. These settings change
+rendering without changing the saved block colors.
+
+**Include intersecting blocks** defaults to off. With it off, a block's entire
+grid-aligned bounding box must be inside the selection. With it on, any overlap
+includes the whole block, even when some of it extends outside the box. The same
+setting applies to cutaways, cut, copy, delete, and section blueprints. **Ctrl**
+inverts the setting for an operation, including H, J, and the copy/cut mouse buttons.
+
+The mask belongs to one grid instance and is never copied to another grid.
+Newly placed or pasted blocks clear the mask cells they occupy and start visible
+and solid.
+
+Cutaways stay in memory and reset when the world unloads or reloads; they are
+never stored in saves or blueprints.
+
+In multiplayer, cutaways require creative mode or admin rights. Non-admin
+players can apply them only to grids they own; admins can apply them to any grid.
+Each client keeps its own mask, so other players keep their normal view. In
+offline survival, creative tools or admin rights are required.
+
+### Auto-hide blocks
+
+**Auto-hide blocks** is off by default. Turn it on in the configuration or with
+**Ctrl + Alt + \**. Blocks whose grid-aligned cube bounds touch a sphere around
+the character become transparent and lose collision. They return to normal as
+you move away. The same grid ownership and creative/admin permissions apply.
+
+The default **Auto-hide radius** is **7.5 m**. Set it from **0 to 50 m**, in
+**0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.1 m;
+**Ctrl + Alt + ]** increases it by 0.1 m. All three shortcuts can be rebound.
+The bracket shortcuts take priority over the game's paint-color controls. The
+game's oxygen debug display may also react to them when that display is enabled.
+
+Auto-hide does not edit the manual mask. Turning it off restores only the blocks
+it hid automatically; manually hidden blocks stay hidden. Freshly placed or
+pasted blocks still clear their manual mask cells, but auto-hide can temporarily
+hide them while they touch the sphere. **Show all blocks on all grids** and
+**Ctrl + Shift + J** turn auto-hide off and clear all manual masks. World unload
+also turns it off. The radius and key bindings are saved; the on/off state is not.
 
 ### Subgrid support
 

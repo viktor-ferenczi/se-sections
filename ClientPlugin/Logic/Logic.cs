@@ -39,9 +39,18 @@ namespace ClientPlugin.Logic
         private static Config Cfg => Config.Current;
 
         // Reflection
-        private static readonly MethodInfo ClearRenderData = AccessTools.DeclaredMethod(typeof(MyCubeBuilder), "ClearRenderData");
-        private static readonly MethodInfo CheckCopyPasteAllowed = AccessTools.DeclaredMethod(typeof(MyClipboardComponent), "CheckCopyPasteAllowed");
-        private static readonly FieldInfo ScreensField = AccessTools.DeclaredField(typeof(MyScreenManager), "m_screens");
+        private static readonly MethodInfo ClearRenderData = AccessTools.DeclaredMethod(
+            typeof(MyCubeBuilder),
+            "ClearRenderData"
+        );
+        private static readonly MethodInfo CheckCopyPasteAllowed = AccessTools.DeclaredMethod(
+            typeof(MyClipboardComponent),
+            "CheckCopyPasteAllowed"
+        );
+        private static readonly FieldInfo ScreensField = AccessTools.DeclaredField(
+            typeof(MyScreenManager),
+            "m_screens"
+        );
 
         // Indexed by enum Base6Directions.Direction
         // MyControlsSpace.CUBE_ROTATE_VERTICAL_POSITIVE => MyKeys.PageDown
@@ -119,6 +128,37 @@ namespace ClientPlugin.Logic
             aimedBlock = GetAimedBlock();
 
             var input = MyInput.Static;
+            if (Cfg.ToggleAutoHide.HasPressed(input))
+            {
+                var enable = !Cfg.AutoHideBlocks;
+                Cfg.AutoHideBlocks = enable;
+                MyAPIGateway.Utilities.ShowMessage(
+                    "Sections",
+                    Cfg.AutoHideBlocks ? "Auto-hide blocks on"
+                        : enable ? "Auto-hide blocks cannot be enabled without cutaway permission"
+                        : "Auto-hide blocks off"
+                );
+                return true;
+            }
+            if (
+                Cfg.DecreaseAutoHideRadius.HasPressed(input)
+                || Cfg.IncreaseAutoHideRadius.HasPressed(input)
+            )
+            {
+                Cfg.AutoHideRadius += Cfg.IncreaseAutoHideRadius.HasPressed(input) ? 0.1f : -0.1f;
+                ClientPlugin.Settings.ConfigStorage.Save(Cfg);
+                MyAPIGateway.Utilities.ShowMessage(
+                    "Sections",
+                    $"Auto-hide radius: {Cfg.AutoHideRadius:0.0} m"
+                );
+                return true;
+            }
+            if (Cfg.RestoreAllCutaways.HasPressed(input))
+            {
+                Cutaway.Restore();
+                Reset();
+                return true;
+            }
             switch (state)
             {
                 case State.Inactive:
@@ -156,24 +196,37 @@ namespace ClientPlugin.Logic
         private bool IsInActiveSession()
         {
             // Guard conditions
-            return MySession.Static != null &&
-                   MySession.Static.IsValid &&
-                   MySession.Static.Ready &&
-                   !MySession.Static.IsUnloading &&
-                   (!Sync.MultiplayerActive || Sync.IsServer) &&
-                   MyCubeBuilder.Static != null &&
-                   MyInput.Static != null &&
-                   MySandboxGame.Static != null &&
-                   MyClipboardComponent.Static != null;
+            return MySession.Static != null
+                && MySession.Static.IsValid
+                && MySession.Static.Ready
+                && !MySession.Static.IsUnloading
+                && (!Sync.MultiplayerActive || Sync.IsServer || Cutaway.IsAllowed)
+                && MyCubeBuilder.Static != null
+                && MyInput.Static != null
+                && MySandboxGame.Static != null
+                && MyClipboardComponent.Static != null;
         }
+
+        private bool CanEditSections() =>
+            (!Sync.MultiplayerActive || Sync.IsServer)
+            && (bool)
+                CheckCopyPasteAllowed.Invoke(MyClipboardComponent.Static, Array.Empty<object>());
 
         private bool HandleInactive(IMyInput input)
         {
-            MyFakes.DISABLE_CLIPBOARD_PLACEMENT_TEST = Cfg.DisablePlacementTest && HasClipboardContent() && input.IsAnyAltKeyPressed();
+            MyFakes.DISABLE_CLIPBOARD_PLACEMENT_TEST =
+                Cfg.DisablePlacementTest && HasClipboardContent() && input.IsAnyAltKeyPressed();
 
             if (Cfg.Activate.IsPressed(input))
             {
-                if (!(bool)CheckCopyPasteAllowed.Invoke(MyClipboardComponent.Static, Array.Empty<object>()))
+                if (
+                    !Cutaway.IsAllowed
+                    && !(bool)
+                        CheckCopyPasteAllowed.Invoke(
+                            MyClipboardComponent.Static,
+                            Array.Empty<object>()
+                        )
+                )
                 {
                     MyClipboardComponent.ShowCannotPasteError();
                     return true;
@@ -199,7 +252,17 @@ namespace ClientPlugin.Logic
             if (firstBlock == null || grid == null)
                 return false;
 
-            if (firstBlock != null && Cfg.ClearBlockReferenceData.IsPressed(input))
+            if (Cfg.RestoreGridCutaway.HasPressed(input))
+            {
+                Cutaway.Restore(grid);
+                return true;
+            }
+
+            if (
+                firstBlock != null
+                && Cfg.ClearBlockReferenceData.IsPressed(input)
+                && CanEditSections()
+            )
             {
                 ClearBlockReferenceData(firstBlock.CubeGrid);
                 Reset();
@@ -208,6 +271,8 @@ namespace ClientPlugin.Logic
 
             if (input.IsNewLeftMousePressed())
             {
+                if (Sync.MultiplayerActive && !Sync.IsServer && !Cutaway.CanApply(grid))
+                    return true;
                 state = State.SelectingSecond;
                 return true;
             }
@@ -242,18 +307,24 @@ namespace ClientPlugin.Logic
         {
             if (mainGrid == null)
                 return;
-            
+
             var messageBox = MyGuiSandbox.CreateMessageBox(
                 MyMessageBoxStyleEnum.Info,
                 MyMessageBoxButtonsType.YES_NO,
-                new StringBuilder("Are you sure to clear all block reference data\r\nfrom this grid and all connected subgrids?"),
+                new StringBuilder(
+                    "Are you sure to clear all block reference data\r\nfrom this grid and all connected subgrids?"
+                ),
                 new StringBuilder("Confirmation - Box Selector"),
-                callback: result => OnClearBlockReferenceDataConfirmed(result, mainGrid));
+                callback: result => OnClearBlockReferenceDataConfirmed(result, mainGrid)
+            );
 
             MyGuiSandbox.AddScreen(messageBox);
         }
 
-        private void OnClearBlockReferenceDataConfirmed(MyGuiScreenMessageBox.ResultEnum result, MyCubeGrid mainGrid)
+        private void OnClearBlockReferenceDataConfirmed(
+            MyGuiScreenMessageBox.ResultEnum result,
+            MyCubeGrid mainGrid
+        )
         {
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
@@ -264,14 +335,46 @@ namespace ClientPlugin.Logic
             References.ClearBlockReferenceData(mainGrid);
 
             var gridName = mainGrid.DisplayName ?? mainGrid.Name ?? mainGrid.EntityId.ToString();
-            MyAPIGateway.Utilities.ShowMessage("Sections", $"Block reference data has been cleared from this grid and all connected subgrids: {gridName}");
+            MyAPIGateway.Utilities.ShowMessage(
+                "Sections",
+                $"Block reference data has been cleared from this grid and all connected subgrids: {gridName}"
+            );
         }
 
-        private const string ConfigurationHint = "\r\n\r\nYou can disable this confirmation in configuration.\r\nTo configure, press Ctrl-Alt-/ after closing this dialog.";
+        private const string ConfigurationHint =
+            "\r\n\r\nYou can disable this confirmation in configuration.\r\nTo configure, press Ctrl-Alt-/ after closing this dialog.";
 
         private bool HandleResizing(IMyInput input)
         {
             EnsureAimedBlockIsInsideSelection();
+
+            if (Cfg.RestoreGridCutaway.HasPressed(input))
+            {
+                Cutaway.Restore(grid);
+                return true;
+            }
+            if (
+                Cfg.HideSelectedBlocks.HasPressedIgnoringCtrl(input)
+                || Cfg.ShowSelectedBlocks.HasPressedIgnoringCtrl(input)
+            )
+            {
+                if (!Cutaway.CanApply(grid))
+                {
+                    MyAPIGateway.Utilities.ShowMessage(
+                        "Sections",
+                        "Cutaways require creative tools or admin rights. In multiplayer, creative mode or admin rights are required. Only admins may hide grids owned by someone else."
+                    );
+                    return true;
+                }
+                var hide = Cfg.HideSelectedBlocks.HasPressedIgnoringCtrl(input);
+                Cutaway.ApplyBox(
+                    grid,
+                    box,
+                    hide,
+                    Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()
+                );
+                return true;
+            }
 
             if (input.IsNewKeyPressed(MyKeys.Escape))
             {
@@ -279,25 +382,35 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            if (input.IsNewLeftMousePressed())
+            if (input.IsNewLeftMousePressed() && CanEditSections())
             {
-                var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
+                var includeIntersectingBlocks = (
+                    Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()
+                );
                 Copy(includeIntersectingBlocks);
                 Reset();
                 return true;
             }
 
-            if (input.IsNewRightMousePressed())
+            if (input.IsNewRightMousePressed() && CanEditSections())
             {
-                var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
+                var includeIntersectingBlocks = (
+                    Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()
+                );
                 if (Cfg.CutConfirmation)
                 {
                     var messageBox = MyGuiSandbox.CreateMessageBox(
                         MyMessageBoxStyleEnum.Info,
                         MyMessageBoxButtonsType.YES_NO,
-                        new StringBuilder("Are you sure to CUT the selected blocks?" + ConfigurationHint),
+                        new StringBuilder(
+                            "Are you sure to CUT the selected blocks?" + ConfigurationHint
+                        ),
                         new StringBuilder("Confirmation - Box Selector"),
-                        callback: result => { OnCutConfirmed(result, includeIntersectingBlocks); });
+                        callback: result =>
+                        {
+                            OnCutConfirmed(result, includeIntersectingBlocks);
+                        }
+                    );
                     MyGuiSandbox.AddScreen(messageBox);
                 }
                 else
@@ -308,9 +421,9 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            if (Cfg.SaveSelectedBlocks.IsPressed(input))
+            if (Cfg.SaveSelectedBlocks.IsPressed(input) && CanEditSections())
             {
-                SaveToBlueprintFile(input.IsAnyCtrlKeyPressed());
+                SaveToBlueprintFile((Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()));
                 return true;
             }
 
@@ -320,44 +433,69 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            if (Cfg.DeleteSelectedBlocks.IsPressed(input))
+            if (Cfg.DeleteSelectedBlocks.IsPressed(input) && CanEditSections())
             {
-                var includeIntersectingBlocks = input.IsAnyCtrlKeyPressed();
+                var includeIntersectingBlocks = (
+                    Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()
+                );
                 if (Cfg.DeleteConfirmation)
                 {
                     var messageBox = MyGuiSandbox.CreateMessageBox(
                         MyMessageBoxStyleEnum.Info,
                         MyMessageBoxButtonsType.YES_NO,
-                        new StringBuilder("Are you sure to DELETE the selected blocks?" + ConfigurationHint),
+                        new StringBuilder(
+                            "Are you sure to DELETE the selected blocks?" + ConfigurationHint
+                        ),
                         new StringBuilder("Confirmation - Box Selector"),
-                        callback: result => { OnDeleteConfirmed(result, includeIntersectingBlocks); });
+                        callback: result =>
+                        {
+                            OnDeleteConfirmed(result, includeIntersectingBlocks);
+                        }
+                    );
                     MyGuiSandbox.AddScreen(messageBox);
                 }
                 else
                 {
-                    OnDeleteConfirmed(MyGuiScreenMessageBox.ResultEnum.YES, includeIntersectingBlocks);
+                    OnDeleteConfirmed(
+                        MyGuiScreenMessageBox.ResultEnum.YES,
+                        includeIntersectingBlocks
+                    );
                 }
 
                 return true;
             }
 
-            var closestDirections = grid.WorldMatrix.FindClosestDirectionsTo(MyAPIGateway.Session.LocalHumanPlayer.Character.WorldMatrix);
+            var closestDirections = grid.WorldMatrix.FindClosestDirectionsTo(
+                MyAPIGateway.Session.LocalHumanPlayer.Character.WorldMatrix
+            );
 
             var b = box;
             var handled = false;
             var shift = input.IsAnyShiftKeyPressed();
+            var move = input.IsAnyAltKeyPressed();
             for (var directionIndex = 0; directionIndex < 6; directionIndex++)
             {
                 var controlName = ResizeControls[directionIndex];
-                var pressed = MyControllerHelper.IsControl(MyStringId.NullOrEmpty, controlName, MyControlStateType.NEW_PRESSED_REPEATING);
+                var pressed = MyControllerHelper.IsControl(
+                    MyStringId.NullOrEmpty,
+                    controlName,
+                    MyControlStateType.NEW_PRESSED_REPEATING
+                );
                 if (!pressed)
                     continue;
 
                 var direction = (Base6Directions.Direction)directionIndex;
-                var step = closestDirections.GetClosestIntDirection(shift ? Base6Directions.GetOppositeDirection(direction) : direction);
+                var step = closestDirections.GetClosestIntDirection(
+                    shift ? Base6Directions.GetOppositeDirection(direction) : direction
+                );
                 var axis = step.IndexOfFirstNonzeroAxis();
 
-                if (shift == step[axis] > 0)
+                if (move)
+                {
+                    b.Min += step;
+                    b.Max += step;
+                }
+                else if (shift == step[axis] > 0)
                     b.Min += step;
                 else
                     b.Max += step;
@@ -366,7 +504,9 @@ namespace ClientPlugin.Logic
             }
 
             if (handled && b.IsValid)
+            {
                 box = b;
+            }
 
             return handled;
         }
@@ -404,7 +544,10 @@ namespace ClientPlugin.Logic
                 aimedBlock = null;
         }
 
-        private void OnDeleteConfirmed(MyGuiScreenMessageBox.ResultEnum result, bool includeIntersectingBlocks)
+        private void OnDeleteConfirmed(
+            MyGuiScreenMessageBox.ResultEnum result,
+            bool includeIntersectingBlocks
+        )
         {
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
@@ -413,7 +556,10 @@ namespace ClientPlugin.Logic
             Reset();
         }
 
-        private void OnCutConfirmed(MyGuiScreenMessageBox.ResultEnum result, bool includeIntersectingBlocks)
+        private void OnCutConfirmed(
+            MyGuiScreenMessageBox.ResultEnum result,
+            bool includeIntersectingBlocks
+        )
         {
             if (result != MyGuiScreenMessageBox.ResultEnum.YES)
                 return;
@@ -427,7 +573,11 @@ namespace ClientPlugin.Logic
         {
             new References(grid).Backup();
 
-            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            var gridBuilders = CreateGridBuilders(
+                includeIntersectingBlocks,
+                out var blockMinPositions,
+                out var subgrids
+            );
             if (gridBuilders.Count == 0)
                 return;
 
@@ -438,7 +588,11 @@ namespace ClientPlugin.Logic
         {
             new References(grid).Backup();
 
-            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            var gridBuilders = CreateGridBuilders(
+                includeIntersectingBlocks,
+                out var blockMinPositions,
+                out var subgrids
+            );
             if (gridBuilders.Count == 0)
                 return;
 
@@ -451,7 +605,11 @@ namespace ClientPlugin.Logic
         {
             new References(grid).Backup();
 
-            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            var gridBuilders = CreateGridBuilders(
+                includeIntersectingBlocks,
+                out var blockMinPositions,
+                out var subgrids
+            );
             if (gridBuilders.Count == 0)
                 return;
 
@@ -467,16 +625,24 @@ namespace ClientPlugin.Logic
                 return null;
 
             var hitGrid = hitInfo.Value.HkHitInfo.GetHitEntity() as MyCubeGrid;
-            if (hitGrid == null || (requiredGrid != null && hitGrid.EntityId != requiredGrid.EntityId))
+            if (
+                hitGrid == null
+                || (requiredGrid != null && hitGrid.EntityId != requiredGrid.EntityId)
+            )
                 return null;
 
-            var blockPosition = hitGrid.WorldToGridInteger(hitInfo.Value.Position + placementProvider.RayDirection * 1e-3);
+            var blockPosition = hitGrid.WorldToGridInteger(
+                hitInfo.Value.Position + placementProvider.RayDirection * 1e-3
+            );
             return hitGrid.GetCubeBlock(blockPosition);
         }
 
         private void CalculateBox()
         {
-            box = new BoundingBoxI(Vector3I.Min(firstBlock.Min, secondBlock.Min), Vector3I.Max(firstBlock.Max, secondBlock.Max));
+            box = new BoundingBoxI(
+                Vector3I.Min(firstBlock.Min, secondBlock.Min),
+                Vector3I.Max(firstBlock.Max, secondBlock.Max)
+            );
             originalBox = box;
         }
 
@@ -495,13 +661,15 @@ namespace ClientPlugin.Logic
                 return true;
             foreach (var screen in screens)
             {
-                if (screen is MyGuiScreenGamePlay ||
-                    screen is MyGuiScreenHudBase)
+                if (screen is MyGuiScreenGamePlay || screen is MyGuiScreenHudBase)
                     continue;
 
                 var name = screen.GetType().Name;
-                if (name == "MyGuiScreenDebugTiming" || // Compatibility with Shift-F11 statistics
-                    name == "FPSOverlay") // Compatibility with the FPS Counter plugin
+                if (
+                    name == "MyGuiScreenDebugTiming"
+                    || // Compatibility with Shift-F11 statistics
+                    name == "FPSOverlay"
+                ) // Compatibility with the FPS Counter plugin
                     continue;
 
                 return true;
@@ -519,8 +687,13 @@ namespace ClientPlugin.Logic
                         DrawBlock(firstBlock, Cfg.FirstColor);
                     DrawHint("Select the first corner block", 1, x: 0f);
                     DrawHint("ESC: Cancel", 2, x: 0f);
-                    DrawHint($"{Cfg.ClearBlockReferenceData}: Clear block reference data", 3, x: 0f);
+                    DrawHint(
+                        $"{Cfg.ClearBlockReferenceData}: Clear block reference data",
+                        3,
+                        x: 0f
+                    );
                     DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
+                    DrawHint($"{Cfg.RestoreGridCutaway}: Show all blocks on this grid", 5, x: 0f);
                     break;
 
                 case State.SelectingSecond:
@@ -549,7 +722,17 @@ namespace ClientPlugin.Logic
                     DrawHint("LMB: Copy    RMB: Cut", 1, x: 0.14f);
                     DrawHint($"{Cfg.DeleteSelectedBlocks}: Delete", 2, x: 0.14f);
                     DrawHint($"{Cfg.SaveSelectedBlocks}: Save as a Section blueprint", 3, x: 0.14f);
-                    DrawHint("+CTRL to include intersecting blocks", 4, x: 0.14f);
+                    DrawHint("+CTRL: Invert Include intersecting blocks", 4, x: 0.14f);
+                    DrawHint(
+                        $"{Cfg.HideSelectedBlocks}: Hide    {Cfg.ShowSelectedBlocks}: Show    ALT+rotation: Move box",
+                        5,
+                        x: 0.14f
+                    );
+                    DrawHint(
+                        $"ESC: Leave box    {Cfg.RestoreAllCutaways}: Restore all",
+                        6,
+                        x: 0.14f
+                    );
                     break;
 
                 case State.TakingScreenshot:
@@ -562,7 +745,13 @@ namespace ClientPlugin.Logic
                     if (movingThumbnailProgress == 0)
                         break;
                     var progressBar = new string('.', movingThumbnailProgress);
-                    DrawText($"Moving thumbnail{progressBar}", Cfg.HintColor, center: false, x: 0.40f, scale: 2f);
+                    DrawText(
+                        $"Moving thumbnail{progressBar}",
+                        Cfg.HintColor,
+                        center: false,
+                        x: 0.40f,
+                        scale: 2f
+                    );
                     break;
             }
 
@@ -577,7 +766,12 @@ namespace ClientPlugin.Logic
             if (MyFakes.DISABLE_CLIPBOARD_PLACEMENT_TEST)
             {
                 var scale = Cfg.SizeTextScale;
-                DrawText("Placement test is disabled. Be careful!", Cfg.SizeColor, scale: scale, y: -0.04f * scale);
+                DrawText(
+                    "Placement test is disabled. Be careful!",
+                    Cfg.SizeColor,
+                    scale: scale,
+                    y: -0.04f * scale
+                );
                 return;
             }
 
@@ -596,11 +790,19 @@ namespace ClientPlugin.Logic
 
         private string GetSizeText(string separator)
         {
-            var closestDirections = grid.WorldMatrix.FindClosestDirectionsTo(MyAPIGateway.Session.LocalHumanPlayer.Character.WorldMatrix);
+            var closestDirections = grid.WorldMatrix.FindClosestDirectionsTo(
+                MyAPIGateway.Session.LocalHumanPlayer.Character.WorldMatrix
+            );
 
-            var xAxis = closestDirections.GetClosestIntDirection(Base6Directions.Direction.Right).IndexOfFirstNonzeroAxis();
-            var yAxis = closestDirections.GetClosestIntDirection(Base6Directions.Direction.Up).IndexOfFirstNonzeroAxis();
-            var zAxis = closestDirections.GetClosestIntDirection(Base6Directions.Direction.Backward).IndexOfFirstNonzeroAxis();
+            var xAxis = closestDirections
+                .GetClosestIntDirection(Base6Directions.Direction.Right)
+                .IndexOfFirstNonzeroAxis();
+            var yAxis = closestDirections
+                .GetClosestIntDirection(Base6Directions.Direction.Up)
+                .IndexOfFirstNonzeroAxis();
+            var zAxis = closestDirections
+                .GetClosestIntDirection(Base6Directions.Direction.Backward)
+                .IndexOfFirstNonzeroAxis();
 
             var sz = box.Size + Vector3I.One;
             var text = $"{sz[xAxis]}{separator}{sz[yAxis]}{separator}{sz[zAxis]}";
@@ -615,19 +817,46 @@ namespace ClientPlugin.Logic
             DrawText(text, Cfg.HintColor, lineNumber, center: false, x: 0.43f + x);
         }
 
-        private void DrawText(string text, Color color, int lineNumber = 1, float scale = 1f, bool center = true, float x = 0.5f, float? y = null)
+        private void DrawText(
+            string text,
+            Color color,
+            int lineNumber = 1,
+            float scale = 1f,
+            bool center = true,
+            float x = 0.5f,
+            float? y = null
+        )
         {
             if (!y.HasValue)
                 y = 0.04f * scale * (lineNumber - 1);
 
-            var screenCoord = new Vector2(MyRenderProxy.MainViewport.Width * x, MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value));
+            var screenCoord = new Vector2(
+                MyRenderProxy.MainViewport.Width * x,
+                MyRenderProxy.MainViewport.Height * (Cfg.TextPosition + y.Value)
+            );
 
             if (Cfg.TextShadowOffset != 0 && Cfg.TextShadowColor.A != 0)
             {
-                MyRenderProxy.DebugDrawText2D(screenCoord + new Vector2(Cfg.TextShadowOffset), text, Cfg.TextShadowColor, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+                MyRenderProxy.DebugDrawText2D(
+                    screenCoord + new Vector2(Cfg.TextShadowOffset),
+                    text,
+                    Cfg.TextShadowColor,
+                    scale,
+                    center
+                        ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
+                        : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP
+                );
             }
 
-            MyRenderProxy.DebugDrawText2D(screenCoord, text, color, scale, center ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+            MyRenderProxy.DebugDrawText2D(
+                screenCoord,
+                text,
+                color,
+                scale,
+                center
+                    ? MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
+                    : MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP
+            );
         }
 
         private void DrawBlock(MySlimBlock block, Color color)
@@ -635,7 +864,13 @@ namespace ClientPlugin.Logic
             var v4Color = color.ToVector4();
             for (var i = 0; i < Cfg.HighlightDensity; i++)
             {
-                MyCubeBuilder.DrawSemiTransparentBox(grid, block, v4Color, lineMaterial: Cfg.BlockMaterial, lineColor: v4Color);
+                MyCubeBuilder.DrawSemiTransparentBox(
+                    grid,
+                    block,
+                    v4Color,
+                    lineMaterial: Cfg.BlockMaterial,
+                    lineColor: v4Color
+                );
             }
         }
 
@@ -644,7 +879,14 @@ namespace ClientPlugin.Logic
             var v4Color = color.ToVector4();
             for (var i = 0; i < Cfg.HighlightDensity; i++)
             {
-                MyCubeBuilder.DrawSemiTransparentBox(box.Min, box.Max, grid, v4Color, lineMaterial: Cfg.BoxMaterial, lineColor: v4Color);
+                MyCubeBuilder.DrawSemiTransparentBox(
+                    box.Min,
+                    box.Max,
+                    grid,
+                    v4Color,
+                    lineMaterial: Cfg.BoxMaterial,
+                    lineColor: v4Color
+                );
             }
         }
 
@@ -661,7 +903,10 @@ namespace ClientPlugin.Logic
             MatrixD m2 = MatrixD.Invert(m);
             Matrix matrix = Matrix.Normalize(m2);
             BoundingSphere boundingSphere2 = boundingSphere.Transform(m);
-            Vector3 dragPointDelta = Vector3.TransformNormal((Vector3)(Vector3D)value.Position - boundingSphere2.Center, matrix);
+            Vector3 dragPointDelta = Vector3.TransformNormal(
+                (Vector3)(Vector3D)value.Position - boundingSphere2.Center,
+                matrix
+            );
             float dragVectorLength = boundingSphere.Radius + 10f;
 
             clipboard.SetGridFromBuilders(gridBuilders.ToArray(), dragPointDelta, dragVectorLength);
@@ -690,13 +935,18 @@ namespace ClientPlugin.Logic
             }
         }
 
-        private static string BlueprintSubdirPath => Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory);
+        private static string BlueprintSubdirPath =>
+            Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory);
 
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
             new References(grid).Backup();
 
-            var gridBuilders = CreateGridBuilders(includeIntersectingBlocks, out var blockMinPositions, out var subgrids);
+            var gridBuilders = CreateGridBuilders(
+                includeIntersectingBlocks,
+                out var blockMinPositions,
+                out var subgrids
+            );
             if (gridBuilders.Count == 0)
                 return;
 
@@ -706,33 +956,45 @@ namespace ClientPlugin.Logic
                 return;
             }
 
-            MyGuiSandbox.AddScreen(new NameDialog(
-                name =>
-                {
-                    gridBuilders[0].DisplayName = name;
-
-                    var blueprintPath = Path.Combine(MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL, Cfg.SectionsSubdirectory, name);
-                    if (!Directory.Exists(blueprintPath))
+            MyGuiSandbox.AddScreen(
+                new NameDialog(
+                    name =>
                     {
-                        StoreBlueprint(gridBuilders);
-                        return;
-                    }
+                        gridBuilders[0].DisplayName = name;
 
-                    MyGuiSandbox.AddScreen(
-                        MyGuiSandbox.CreateMessageBox(buttonType: MyMessageBoxButtonsType.YES_NO,
-                            messageText: new StringBuilder($"Are you sure to overwrite this blueprint?\r\n\r\n{name}"),
-                            messageCaption: new StringBuilder("Confirmation"),
-                            callback: result =>
-                            {
-                                if (result != MyGuiScreenMessageBox.ResultEnum.YES)
-                                    return;
+                        var blueprintPath = Path.Combine(
+                            MyBlueprintUtils.BLUEPRINT_FOLDER_LOCAL,
+                            Cfg.SectionsSubdirectory,
+                            name
+                        );
+                        if (!Directory.Exists(blueprintPath))
+                        {
+                            StoreBlueprint(gridBuilders);
+                            return;
+                        }
 
-                                StoreBlueprint(gridBuilders);
-                            }));
-                },
-                "Save as local blueprint",
-                gridBuilders[0].DisplayName,
-                moveCursorToEnd: true));
+                        MyGuiSandbox.AddScreen(
+                            MyGuiSandbox.CreateMessageBox(
+                                buttonType: MyMessageBoxButtonsType.YES_NO,
+                                messageText: new StringBuilder(
+                                    $"Are you sure to overwrite this blueprint?\r\n\r\n{name}"
+                                ),
+                                messageCaption: new StringBuilder("Confirmation"),
+                                callback: result =>
+                                {
+                                    if (result != MyGuiScreenMessageBox.ResultEnum.YES)
+                                        return;
+
+                                    StoreBlueprint(gridBuilders);
+                                }
+                            )
+                        );
+                    },
+                    "Save as local blueprint",
+                    gridBuilders[0].DisplayName,
+                    moveCursorToEnd: true
+                )
+            );
         }
 
         private void StoreBlueprint(List<MyObjectBuilder_CubeGrid> gridBuilders)
@@ -751,12 +1013,21 @@ namespace ClientPlugin.Logic
             definition.ShipBlueprints = new[] { blueprint };
 
             Directory.CreateDirectory(BlueprintSubdirPath);
-            MyBlueprintUtils.SavePrefabToFile(definition, blueprintName, Cfg.SectionsSubdirectory, replace: Cfg.RenameBlueprint);
+            MyBlueprintUtils.SavePrefabToFile(
+                definition,
+                blueprintName,
+                Cfg.SectionsSubdirectory,
+                replace: Cfg.RenameBlueprint
+            );
 
             state = State.TakingScreenshot;
         }
 
-        private List<MyObjectBuilder_CubeGrid> CreateGridBuilders(bool includeIntersectingBlocks, out HashSet<Vector3I> blockMinPositions, out HashSet<MyCubeGrid> subgrids)
+        private List<MyObjectBuilder_CubeGrid> CreateGridBuilders(
+            bool includeIntersectingBlocks,
+            out HashSet<Vector3I> blockMinPositions,
+            out HashSet<MyCubeGrid> subgrids
+        )
         {
             // Collect all mechanical connections inside the mechanical group
             var mechanicalConnections = new MechanicalConnections(grid);
@@ -766,21 +1037,30 @@ namespace ClientPlugin.Logic
             blockMinPositions = blockMinSet;
 
             // Delete mechanical connections where the base or the top block is in the selection
-            mechanicalConnections.RemoveConnections(grid.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)));
+            mechanicalConnections.RemoveConnections(
+                grid.CubeBlocks.Where(b => blockMinSet.Contains(b.Min))
+            );
 
             // Any grid which becomes unreachable from the main grid must be copied together with the selected blocks
-            subgrids = Cfg.HandleSubgrids ? mechanicalConnections.FindUnreachableSubgrids(grid) : new HashSet<MyCubeGrid>();
+            subgrids = Cfg.HandleSubgrids
+                ? mechanicalConnections.FindUnreachableSubgrids(grid)
+                : new HashSet<MyCubeGrid>();
 
             // Create the grid builders
             var mainGridBuilder = CreateMainGridBuilder(blockMinSet);
-            var gridBuilders = new List<MyObjectBuilder_CubeGrid>(1 + subgrids.Count) { mainGridBuilder };
-            gridBuilders.AddRange(subgrids.Select(subgrid => (MyObjectBuilder_CubeGrid)subgrid.GetObjectBuilder()));
+            var gridBuilders = new List<MyObjectBuilder_CubeGrid>(1 + subgrids.Count)
+            {
+                mainGridBuilder,
+            };
+            gridBuilders.AddRange(
+                subgrids.Select(subgrid => (MyObjectBuilder_CubeGrid)subgrid.GetObjectBuilder())
+            );
 
             // Remap EntityIds to avoid duplicates on pasting.
             // It will disconnect all block toolbar slot and EC/TC block list entry connections between
             // the copied blocks (and subgrids) with the remaining blocks (and subgrids).
             // This is why we need a mechanism to store these connections,
-            // so these connections can be restored on pasting those blocks (and subgrids) back. 
+            // so these connections can be restored on pasting those blocks (and subgrids) back.
             MyEntities.RemapObjectBuilderCollection(gridBuilders);
 
             // Sanity check
@@ -788,14 +1068,16 @@ namespace ClientPlugin.Logic
                 return gridBuilders;
 
             // Choose an origin block on the main grid to allow for intuitive pasting of the copied grid or blueprint
-            var originBlockMin = aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
-                ? aimedBlock.Min
-                : blockMinSet.FindCorner();
-            var originBlockIndex = mainGridBuilder.CubeBlocks
-                .FindIndex(b => (Vector3I)b.Min == originBlockMin);
+            var originBlockMin =
+                aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
+                    ? aimedBlock.Min
+                    : blockMinSet.FindCorner();
+            var originBlockIndex = mainGridBuilder.CubeBlocks.FindIndex(b =>
+                (Vector3I)b.Min == originBlockMin
+            );
             if (originBlockIndex > 0)
             {
-                // Move the block to the head of the cube list, that marks it as the origin one 
+                // Move the block to the head of the cube list, that marks it as the origin one
                 var originBlockBuilder = mainGridBuilder.CubeBlocks[originBlockIndex];
                 mainGridBuilder.CubeBlocks.RemoveAt(originBlockIndex);
                 mainGridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
@@ -806,12 +1088,13 @@ namespace ClientPlugin.Logic
 
         private HashSet<Vector3I> CollectMinOfBlocksInBox(bool includeIntersectingBlocks)
         {
-            return grid.CubeBlocks
-                .Where(block =>
+            return grid
+                .CubeBlocks.Where(block =>
                     includeIntersectingBlocks
                         ? box.Intersects(new BoundingBoxI(block.Min, block.Max))
-                        : box.Contains(block.Min) == ContainmentType.Contains &&
-                          box.Contains(block.Max) == ContainmentType.Contains)
+                        : box.Contains(block.Min) == ContainmentType.Contains
+                            && box.Contains(block.Max) == ContainmentType.Contains
+                )
                 .Select(block => block.Min)
                 .ToHashSet();
         }
@@ -820,7 +1103,9 @@ namespace ClientPlugin.Logic
         {
             // Keep only the blocks in selection by their Min coordinates
             var gridBuilder = (MyObjectBuilder_CubeGrid)grid.GetObjectBuilder();
-            gridBuilder.CubeBlocks = gridBuilder.CubeBlocks.Where(b => blockMinSet.Contains(b.Min)).ToList();
+            gridBuilder.CubeBlocks = gridBuilder
+                .CubeBlocks.Where(b => blockMinSet.Contains(b.Min))
+                .ToList();
 
             // Set the name, it will be the basis for saving the grid as a blueprint
             var sizeText = GetSizeText("x");
@@ -837,18 +1122,22 @@ namespace ClientPlugin.Logic
             }
 
             // Remove empty block groups
-            gridBuilder.BlockGroups = gridBuilder.BlockGroups.Where(group => group.Blocks.Count != 0).ToList();
+            gridBuilder.BlockGroups = gridBuilder
+                .BlockGroups.Where(group => group.Blocks.Count != 0)
+                .ToList();
 
             // Choose an origin block to allow for intuitive pasting of the copied grid or blueprint
-            var originBlockMin = aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
-                ? aimedBlock.Min
-                : blockMinSet.FindCorner();
-            var originBlockIndex = gridBuilder.CubeBlocks
-                .FindIndex(b => (Vector3I)b.Min == originBlockMin);
+            var originBlockMin =
+                aimedBlock != null && blockMinSet.Contains(aimedBlock.Min)
+                    ? aimedBlock.Min
+                    : blockMinSet.FindCorner();
+            var originBlockIndex = gridBuilder.CubeBlocks.FindIndex(b =>
+                (Vector3I)b.Min == originBlockMin
+            );
             if (originBlockIndex <= 0)
                 return gridBuilder;
 
-            // Move the block to the head of the cube list, that marks it as the origin one 
+            // Move the block to the head of the cube list, that marks it as the origin one
             var originBlockBuilder = gridBuilder.CubeBlocks[originBlockIndex];
             gridBuilder.CubeBlocks.RemoveAt(originBlockIndex);
             gridBuilder.CubeBlocks.Insert(0, originBlockBuilder);
@@ -864,7 +1153,10 @@ namespace ClientPlugin.Logic
             float num = MyRenderProxy.MainViewport.Width / MyRenderProxy.MainViewport.Height;
             float num2 = (float)Math.Sqrt(262140f / num);
             Vector2 vector = new Vector2(num2 * num, num2);
-            Vector2 sizeMultiplier = new Vector2(vector.X / MyRenderProxy.MainViewport.Width, vector.Y / MyRenderProxy.MainViewport.Height);
+            Vector2 sizeMultiplier = new Vector2(
+                vector.X / MyRenderProxy.MainViewport.Width,
+                vector.Y / MyRenderProxy.MainViewport.Height
+            );
             if (sizeMultiplier.X > 1f)
             {
                 sizeMultiplier.X = 1f;
@@ -881,8 +1173,17 @@ namespace ClientPlugin.Logic
                 eventHandlerRegistered = true;
             }
 
-            temporaryThumbnailPath = Path.Combine(Constants.LocalTempDir, $"{MyBlueprintUtils.THUMB_IMAGE_NAME}.{Guid.NewGuid()}.png");
-            MyRenderProxy.TakeScreenshot(sizeMultiplier, temporaryThumbnailPath, debug: false, ignoreSprites: true, showNotification: false);
+            temporaryThumbnailPath = Path.Combine(
+                Constants.LocalTempDir,
+                $"{MyBlueprintUtils.THUMB_IMAGE_NAME}.{Guid.NewGuid()}.png"
+            );
+            MyRenderProxy.TakeScreenshot(
+                sizeMultiplier,
+                temporaryThumbnailPath,
+                debug: false,
+                ignoreSprites: true,
+                showNotification: false
+            );
         }
 
         public void SaveToDiskPostfix(string filePath)
@@ -916,7 +1217,9 @@ namespace ClientPlugin.Logic
 
             if (elapsed > 5.0)
             {
-                MyLog.Default.Warning($"{Plugin.Name}: Failed to move thumbnail file: {temporaryThumbnailPath} => {thumbnailPath}");
+                MyLog.Default.Warning(
+                    $"{Plugin.Name}: Failed to move thumbnail file: {temporaryThumbnailPath} => {thumbnailPath}"
+                );
                 return true;
             }
 

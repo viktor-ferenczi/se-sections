@@ -18,7 +18,9 @@ namespace ClientPlugin
         public static Plugin Instance { get; private set; }
         private SettingsGenerator settingsGenerator;
 
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining
+        )]
         public void Init(object gameInstance)
         {
             Instance = this;
@@ -34,6 +36,7 @@ namespace ClientPlugin
 
         public void Dispose()
         {
+            Cutaway.Restore();
             MySession.OnLoading -= OnLoadingSession;
             MySession.OnUnloading -= OnUnloadingSession;
 
@@ -48,11 +51,13 @@ namespace ClientPlugin
 
         private void OnUnloadingSession()
         {
+            Cutaway.Restore();
             Logic.Logic.Static.Reset();
         }
 
         public void Update()
         {
+            Cutaway.Update();
             Logic.Logic.Static?.Update();
         }
 
@@ -62,6 +67,8 @@ namespace ClientPlugin
             Instance.settingsGenerator.SetLayout<Simple>();
             MyGuiSandbox.AddScreen(Instance.settingsGenerator.Dialog);
         }
+
+        public void RefreshConfigDialog() => settingsGenerator.Dialog.RecreateControls(false);
 
         //TODO: Uncomment and use this method to load asset files
         /*public void LoadAssets(string folder)

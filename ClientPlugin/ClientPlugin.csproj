@@ -487,6 +487,8 @@
     <Compile Include="Logic\Constants.cs" />
     <Compile Include="Logic\Extensions.cs" />
     <Compile Include="Logic\Logic.cs" />
+    <Compile Include="Logic\Cutaway.cs" />
+    <Compile Include="Patches\CutawayCollisionPatch.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Logic\MechanicalConnection.cs" />
     <Compile Include="Logic\MechanicalConnections.cs" />
