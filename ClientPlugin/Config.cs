@@ -199,6 +199,9 @@ namespace ClientPlugin
             set => SetField(ref autoHideBlocks, Logic.Cutaway.SetAutoHide(value));
         }
 
+        internal void StopAutoHide() =>
+            SetField(ref autoHideBlocks, Logic.Cutaway.SetAutoHide(false, force: true));
+
         [Slider(
             0f,
             50f,

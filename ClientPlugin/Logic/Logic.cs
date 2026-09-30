@@ -132,6 +132,8 @@ namespace ClientPlugin.Logic
             {
                 var enable = !Cfg.AutoHideBlocks;
                 Cfg.AutoHideBlocks = enable;
+                if (!enable && Cfg.AutoHideBlocks)
+                    return true;
                 MyAPIGateway.Utilities.ShowMessage(
                     "Sections",
                     Cfg.AutoHideBlocks ? "Auto-hide blocks on"

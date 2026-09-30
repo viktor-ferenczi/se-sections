@@ -36,7 +36,7 @@ namespace ClientPlugin
 
         public void Dispose()
         {
-            Cutaway.Restore();
+            Cutaway.Restore(force: true);
             MySession.OnLoading -= OnLoadingSession;
             MySession.OnUnloading -= OnUnloadingSession;
 
@@ -51,7 +51,7 @@ namespace ClientPlugin
 
         private void OnUnloadingSession()
         {
-            Cutaway.Restore();
+            Cutaway.Restore(force: true);
             Logic.Logic.Static.Reset();
         }
 

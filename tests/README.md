@@ -47,3 +47,9 @@ reverts the checkbox to off.
 confirmation, cancellation, integer and float settings, and the radius dialog's
 0.1 m increment buttons. It restores the values it changes. This regression
 reproduced the crash caused by looking up the obsolete `m_canHideOthers` field.
+
+`test_auto_hide_safety.py` checks shutdown refusal inside a block and at its
+outer boundary, config checkbox/reset behavior, global recovery, successful
+shutdown after moving clear, and forced cleanup on reload. The refusal message
+is captured for visual inspection. Run only in a disposable world: this test
+reloads without saving.

@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.GUI;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
+using VRage.Audio;
 using VRage.Game.Entity;
 using VRageMath;
 
@@ -40,8 +43,23 @@ namespace ClientPlugin.Logic
         private static readonly HashSet<MySlimBlock> AutoGridBlocks = new HashSet<MySlimBlock>();
         public static bool AutoHideEnabled => Config.Current.AutoHideBlocks;
 
-        public static bool SetAutoHide(bool enabled)
+        public static bool SetAutoHide(bool enabled, bool force = false)
         {
+            if (
+                !enabled
+                && !force
+                && AutoHideEnabled
+                && IsAllowed
+                && CharacterIntersectsHiddenBlock()
+            )
+            {
+                MyGuiAudio.PlaySound(MyGuiSounds.HudUnable);
+                MyAPIGateway.Utilities.ShowMessage(
+                    "Sections",
+                    "Cannot turn off auto-hide while your character overlaps a hidden block. Move clear first."
+                );
+                return true;
+            }
             var allowed = enabled && IsAllowed && MySession.Static.LocalCharacter != null;
             if (allowed)
                 return true;
@@ -49,6 +67,39 @@ namespace ClientPlugin.Logic
                 if (!IsManuallyHidden(block))
                     RestoreBlock(block);
             Automatic.Clear();
+            return false;
+        }
+
+        private static bool CharacterIntersectsHiddenBlock()
+        {
+            var character = MySession.Static.LocalCharacter;
+            if (character == null || character.IsDead)
+                return false;
+            var characterBounds = new MyOrientedBoundingBoxD(
+                character.PositionComp.LocalAABB,
+                character.WorldMatrix
+            );
+            foreach (var block in Automatic)
+            {
+                var grid = block.CubeGrid;
+                if (
+                    grid == null
+                    || grid.Closed
+                    || grid.MarkedForClose
+                    || !block.BlockDefinition.HasPhysics
+                )
+                    continue;
+                var halfCube = new Vector3D(grid.GridSize * 0.5);
+                var bounds = new MyOrientedBoundingBoxD(
+                    new BoundingBoxD(
+                        (Vector3D)block.Min * grid.GridSize - halfCube,
+                        (Vector3D)block.Max * grid.GridSize + halfCube
+                    ),
+                    grid.WorldMatrix
+                );
+                if (characterBounds.Intersects(ref bounds))
+                    return true;
+            }
             return false;
         }
 
@@ -181,10 +232,21 @@ namespace ClientPlugin.Logic
                 || grid.BigOwners.Contains(MySession.Static.LocalPlayerId)
             );
 
-        public static int Restore(MyCubeGrid grid = null, bool stopAutomatic = true)
+        public static int Restore(
+            MyCubeGrid grid = null,
+            bool stopAutomatic = true,
+            bool force = false
+        )
         {
             if (stopAutomatic)
-                Config.Current.AutoHideBlocks = false;
+            {
+                if (force)
+                    Config.Current.StopAutoHide();
+                else
+                    Config.Current.AutoHideBlocks = false;
+                if (AutoHideEnabled)
+                    return 0;
+            }
             if (grid == null)
                 while (AddedBlocks.TryDequeue(out _)) { }
             foreach (
@@ -228,7 +290,7 @@ namespace ClientPlugin.Logic
         {
             if (!IsAllowed)
             {
-                Restore();
+                Restore(force: true);
                 return;
             }
 

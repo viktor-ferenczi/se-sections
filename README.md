@@ -145,6 +145,12 @@ hide them while they touch the sphere. **Show all blocks on all grids** and
 **Ctrl + Shift + J** turn auto-hide off and clear all manual masks. World unload
 also turns it off. The radius and key bindings are saved; the on/off state is not.
 
+Auto-hide cannot be turned off while the character's body overlaps an
+automatically hidden block's grid-aligned bounds. The game plays the block
+placement refusal sound and asks you to move clear first. This also applies
+to the show-all controls, so they cannot restore collision through the
+character. World unload and permission-loss cleanup still restore blocks.
+
 ### Subgrid support
 
 Any **subgrids** which would be orphaned if the selected blocks would be deleted are copied
