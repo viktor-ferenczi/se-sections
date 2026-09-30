@@ -1,8 +1,7 @@
-﻿using Sandbox;
-using Sandbox.Graphics.GUI;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
+using Sandbox;
+using Sandbox.Graphics.GUI;
 using VRage.Utils;
 
 namespace ClientPlugin.Settings.Elements
@@ -22,7 +21,32 @@ namespace ClientPlugin.Settings.Elements
         public readonly string Label;
         public readonly string Description;
 
-        public SliderAttribute(float min, float max, float step = 1f, SliderType type = SliderType.Float, string label = null, string description = null)
+        private sealed class AmountDialog : MyGuiScreenDialogAmount
+        {
+            public AmountDialog(SliderAttribute slider, float amount)
+                : base(
+                    slider.Min,
+                    slider.Max,
+                    MyCommonTexts.DialogAmount_SetValueCaption,
+                    defaultAmount: amount,
+                    parseAsInteger: slider.Type == SliderType.Integer,
+                    backgroundTransition: MySandboxGame.Config.UIBkOpacity,
+                    guiTransition: MySandboxGame.Config.UIOpacity,
+                    incrementStep: slider.Step
+                )
+            {
+                CanHideOthers = true;
+            }
+        }
+
+        public SliderAttribute(
+            float min,
+            float max,
+            float step = 1f,
+            SliderType type = SliderType.Float,
+            string label = null,
+            string description = null
+        )
         {
             Min = min;
             Max = max;
@@ -32,7 +56,11 @@ namespace ClientPlugin.Settings.Elements
             Description = description;
         }
 
-        public List<Control> GetControls(string name, Func<object> propertyGetter, Action<object> propertySetter)
+        public List<Control> GetControls(
+            string name,
+            Func<object> propertyGetter,
+            Action<object> propertySetter
+        )
         {
             var valueLabel = new MyGuiControlLabel();
 
@@ -48,28 +76,19 @@ namespace ClientPlugin.Settings.Elements
 
                     case SliderType.Float:
                         propertySetter(element.Value);
-                        valueLabel.Text = MyValueFormatter.GetFormatedFloat(element.Value, element.LabelDecimalPlaces);
+                        valueLabel.Text = MyValueFormatter.GetFormatedFloat(
+                            element.Value,
+                            element.LabelDecimalPlaces
+                        );
                         break;
                 }
             }
 
             bool SpecifyValue(MyGuiControlSlider element)
             {
-                MyGuiScreenDialogAmount screen = new MyGuiScreenDialogAmount(
-                    Min,
-                    Max,
-                    MyCommonTexts.DialogAmount_SetValueCaption,
-                    defaultAmount: Convert.ToSingle(propertyGetter()),
-                    parseAsInteger: Type == SliderType.Integer,
-                    backgroundTransition: MySandboxGame.Config.UIBkOpacity,
-                    guiTransition: MySandboxGame.Config.UIOpacity);
+                var screen = new AmountDialog(this, Convert.ToSingle(propertyGetter()));
 
                 screen.OnConfirmed += (value) => element.Value = value;
-
-                // Much needed visual change requires reflection due to private types
-                typeof(MyGuiScreenBase)
-                    .GetField("m_canHideOthers", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .SetValue(screen, true);
 
                 MyGuiSandbox.AddScreen(screen);
                 return true;
@@ -80,7 +99,8 @@ namespace ClientPlugin.Settings.Elements
                 defaultValue: Convert.ToSingle(propertyGetter()),
                 minValue: Min,
                 maxValue: Max,
-                intValue: Type == SliderType.Integer)
+                intValue: Type == SliderType.Integer
+            )
             {
                 MinimumStepOverride = Step,
             };
@@ -104,10 +124,6 @@ namespace ClientPlugin.Settings.Elements
             };
         }
 
-        public List<Type> SupportedTypes { get; } = new List<Type>()
-        {
-            typeof(float),
-            typeof(int),
-        };
+        public List<Type> SupportedTypes { get; } = new List<Type>() { typeof(float), typeof(int) };
     }
 }

@@ -42,3 +42,8 @@ auto-hide bindings and radius, and leaves auto-hide off. It also sets
 The main-menu permission check was performed separately: opening Sections
 settings and checking **Auto-hide blocks** outside a loaded world immediately
 reverts the checkbox to off.
+
+`test_settings_sliders.py` checks real Ctrl-click numeric entry at 1280×720,
+confirmation, cancellation, integer and float settings, and the radius dialog's
+0.1 m increment buttons. It restores the values it changes. This regression
+reproduced the crash caused by looking up the obsolete `m_canHideOthers` field.
