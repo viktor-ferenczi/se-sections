@@ -128,15 +128,17 @@ namespace ClientPlugin.Logic
         public bool ShouldSuppressGameControl(MyStringId controlId)
         {
             if (
-                state == State.Inactive
-                || !IsInActiveSession()
+                !IsInActiveSession()
                 || !(MyScreenManager.GetScreenWithFocus() is MyGuiScreenGamePlay)
             )
                 return false;
             var input = MyInput.Static;
+            if (state == State.Inactive && !Cfg.RestoreAllCutaways.IsPressed(input))
+                return false;
+            var keys = state != State.Inactive ? CutawayKeys : new[] { Cfg.RestoreAllCutaways.Key };
             var control = input.GetGameControl(controlId);
             return control != null
-                && CutawayKeys.Any(key =>
+                && keys.Any(key =>
                     key != MyKeys.None
                     && input.IsKeyPress(key)
                     && (

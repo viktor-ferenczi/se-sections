@@ -79,7 +79,12 @@ def main():
         assert not t.aim(api, (0, 2, 0))["hit"]
         t.press(api, "OemPipe", ["LeftControl", "LeftAlt"])
         assert enabled(api)
+        cursor = api.get_hud_notifications()["latest"]
         t.press(api, "H", ["LeftControl", "LeftShift"])
+        assert not any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Ctrl+Shift+H changed the HUD signal mode outside selection"
         assert not enabled(api), "Ctrl+Shift+H did not stop auto-hide"
         assert t.aim(api, (0, 2, 0))[
             "hit"
@@ -87,6 +92,17 @@ def main():
         print(
             "PASS Ctrl+Shift+H restores cutaways and stops auto-hide while outside blocks"
         )
+        t.select(api, (0, 0, 0), (4, 4, 0))
+        t.press(api, "H")
+        cursor = api.get_hud_notifications()["latest"]
+        t.press(api, "H", ["LeftControl", "LeftShift"])
+        t.press(api, "H", ["LeftControl", "LeftShift"])
+        assert not any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Restore-all leaked H after clearing selection or on a repeated press"
+        assert t.aim(api, (0, 2, 0))["hit"]
+        print("PASS restore-all and repeated presses leave HUD signals unchanged")
         api.close_grid(t.GRID_ID)
 
 
