@@ -112,6 +112,11 @@ build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
 
+While the yellow selection box is active, its operation keys and mouse buttons
+are reserved for Sections, even if an action is unavailable or the modifiers
+do not match. They do not trigger their normal game actions. Movement and
+looking remain available.
+
 Existing `Sections.cfg` files retain saved key bindings when the plugin is
 updated. To use these defaults, set **Show selected blocks** to **Shift+H** and
 **Restore all cutaways** to **Ctrl+Alt+H** in the configuration. You do not need
@@ -161,6 +166,14 @@ you move away. The same grid ownership and creative/admin permissions apply.
 The default **Auto-hide radius** is **7.5 m**. Set it from **0 to 50 m**, in
 **0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.1 m;
 **Ctrl + Alt + ]** increases it by 0.1 m. All three shortcuts can be rebound.
+The configuration supplies the default radius on each enable. Hotkeys change
+only the active radius while auto-hide is on, without saving it to the config.
+That radius stays in use until auto-hide is turned off; the next enable loads
+the configured default again. Changing the default in the configuration takes
+effect on the next enable.
+
+Toggle confirmations and radius changes appear in the middle of the screen for
+one second. A radius change shows the current value, for example **7.6m**.
 The bracket shortcuts take priority over the game's paint-color controls. The
 game's oxygen debug display may also react to them when that display is enabled.
 
@@ -169,7 +182,8 @@ it hid automatically; manually hidden blocks stay hidden. Freshly placed or
 pasted blocks still clear their manual mask cells, but auto-hide can temporarily
 hide them while they touch the sphere. **Show all blocks on all grids** and
 **Ctrl + Alt + H** turn auto-hide off and clear all manual masks. World unload
-also turns it off. The radius and key bindings are saved; the on/off state is not.
+also turns it off. The configured default radius and key bindings are saved;
+the active radius and on/off state are not.
 
 When collision removal is enabled, auto-hide cannot be turned off while the
 character's body overlaps an

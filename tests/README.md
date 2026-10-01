@@ -32,6 +32,17 @@ copying without transferring the mask, and replacement blocks starting solid.
 Two multiplayer clients are still needed to check ownership restrictions,
 admin permissions, and another player's unchanged view across a real connection.
 
+`test_selection_input.py` requires a disposable creative world and the default
+bindings. It checks that Enter stays reserved with unsupported modifiers and while held, that
+movement still works, and that Enter opens chat normally after leaving the box.
+It does not take screenshots.
+
+`test_auto_hide_radius.py` checks the active radius against a cube just beyond
+the configured sphere. Increasing 7.5 m to 7.6 m must remove its collision
+without changing the configuration. Disabling/re-enabling must reload the
+default, and editing the default while active must take effect only on the next
+enable. It also checks decreasing by 0.1 m and takes no screenshots.
+
 `test_cutaway_lifecycle.py` separately checks **Ctrl+Alt+H** and saves/reloads
 the world while a cutaway and auto-hide are active, then checks restored
 collision and saved block colors. This test writes the world, so use only

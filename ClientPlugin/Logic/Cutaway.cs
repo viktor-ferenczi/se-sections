@@ -55,6 +55,24 @@ namespace ClientPlugin.Logic
         private static readonly HashSet<MySlimBlock> AutoCandidates = new HashSet<MySlimBlock>();
         private static readonly HashSet<MySlimBlock> AutoGridBlocks = new HashSet<MySlimBlock>();
         public static bool AutoHideEnabled => Config.Current.AutoHideBlocks;
+        public static float ActiveAutoHideRadius { get; private set; }
+
+        public static void AdjustAutoHideRadius(float delta)
+        {
+            if (!AutoHideEnabled)
+            {
+                Logic.Static.ShowStatus("Auto-hide blocks is off");
+                return;
+            }
+            ActiveAutoHideRadius = (float)
+                System.Math.Round(MathHelper.Clamp(ActiveAutoHideRadius + delta, 0f, 50f), 1);
+            Logic.Static.ShowStatus(
+                ActiveAutoHideRadius.ToString(
+                    "0.0",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ) + "m"
+            );
+        }
 
         public static bool SetAutoHide(bool enabled, bool force = false)
         {
@@ -72,15 +90,27 @@ namespace ClientPlugin.Logic
                     "Sections",
                     "Cannot turn off auto-hide while your character overlaps a hidden block. Move clear first."
                 );
+                Logic.Static.ShowStatus("Move clear before turning auto-hide off");
                 return true;
             }
             var allowed = enabled && IsAllowed && MySession.Static.LocalCharacter != null;
             if (allowed)
+            {
+                if (!AutoHideEnabled)
+                {
+                    ActiveAutoHideRadius = Config.Current.AutoHideRadius;
+                    Logic.Static.ShowStatus("Auto-hide blocks on");
+                }
                 return true;
+            }
             foreach (var block in Automatic)
                 if (!IsManuallyHidden(block))
                     RestoreBlock(block);
             Automatic.Clear();
+            if (!force && AutoHideEnabled)
+                Logic.Static.ShowStatus("Auto-hide blocks off");
+            else if (enabled)
+                Logic.Static.ShowStatus("Auto-hide blocks cannot be enabled here");
             return false;
         }
 
@@ -130,7 +160,7 @@ namespace ClientPlugin.Logic
             {
                 var sphere = new BoundingSphereD(
                     character.PositionComp.GetPosition(),
-                    Config.Current.AutoHideRadius
+                    ActiveAutoHideRadius
                 );
                 var nearby = MyEntities.GetTopMostEntitiesInSphere(ref sphere);
                 var grids = nearby.OfType<MyCubeGrid>().ToArray();

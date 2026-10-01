@@ -207,7 +207,7 @@ namespace ClientPlugin
             50f,
             0.1f,
             label: "Auto-hide radius (m)",
-            description: "Radius around the character; from 0 to 50 meters in 0.1 meter steps"
+            description: "Default radius loaded each time auto-hide is enabled; from 0 to 50 meters in 0.1 meter steps. Hotkeys temporarily adjust the active radius."
         )]
         public float AutoHideRadius
         {

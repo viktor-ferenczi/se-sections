@@ -96,6 +96,15 @@ namespace ClientPlugin.Logic
         private string temporaryThumbnailPath;
         private string thumbnailPath;
         private DateTime startedMovingThumbnail;
+        private string statusText;
+        private DateTime statusUntil;
+
+        public void ShowStatus(string text)
+        {
+            statusText = text;
+            statusUntil = DateTime.UtcNow.AddSeconds(1);
+        }
+
         private int movingThumbnailProgress;
 
         public Queue<MyCubeGrid> BlockReferenceRestoreQueue = new Queue<MyCubeGrid>();
@@ -132,14 +141,6 @@ namespace ClientPlugin.Logic
             {
                 var enable = !Cfg.AutoHideBlocks;
                 Cfg.AutoHideBlocks = enable;
-                if (!enable && Cfg.AutoHideBlocks)
-                    return true;
-                MyAPIGateway.Utilities.ShowMessage(
-                    "Sections",
-                    Cfg.AutoHideBlocks ? "Auto-hide blocks on"
-                        : enable ? "Auto-hide blocks cannot be enabled without cutaway permission"
-                        : "Auto-hide blocks off"
-                );
                 return true;
             }
             if (
@@ -147,11 +148,8 @@ namespace ClientPlugin.Logic
                 || Cfg.IncreaseAutoHideRadius.HasPressed(input)
             )
             {
-                Cfg.AutoHideRadius += Cfg.IncreaseAutoHideRadius.HasPressed(input) ? 0.1f : -0.1f;
-                ClientPlugin.Settings.ConfigStorage.Save(Cfg);
-                MyAPIGateway.Utilities.ShowMessage(
-                    "Sections",
-                    $"Auto-hide radius: {Cfg.AutoHideRadius:0.0} m"
+                Cutaway.AdjustAutoHideRadius(
+                    Cfg.IncreaseAutoHideRadius.HasPressed(input) ? 0.1f : -0.1f
                 );
                 return true;
             }
@@ -510,8 +508,34 @@ namespace ClientPlugin.Logic
                 box = b;
             }
 
-            return handled;
+            // Reserve box controls even when modifiers or permissions prevent an action.
+            // Returning true also stops the gameplay screen's original input handling.
+            return handled || IsSelectionInput(input);
         }
+
+        private bool IsSelectionInput(IMyInput input) =>
+            input.IsLeftMousePressed()
+            || input.IsRightMousePressed()
+            || new[]
+            {
+                Cfg.HideSelectedBlocks.Key,
+                Cfg.ShowSelectedBlocks.Key,
+                Cfg.RestoreGridCutaway.Key,
+                Cfg.RestoreAllCutaways.Key,
+                Cfg.SaveSelectedBlocks.Key,
+                Cfg.DeleteSelectedBlocks.Key,
+                Cfg.ResetSelection.Key,
+                Cfg.ToggleAutoHide.Key,
+                Cfg.DecreaseAutoHideRadius.Key,
+                Cfg.IncreaseAutoHideRadius.Key,
+            }.Any(key => key != MyKeys.None && input.IsKeyPress(key))
+            || ResizeControls.Any(control =>
+                MyControllerHelper.IsControl(
+                    MyStringId.NullOrEmpty,
+                    control,
+                    MyControlStateType.PRESSED
+                )
+            );
 
         private void HandleTakingScreenshot()
         {
@@ -652,6 +676,9 @@ namespace ClientPlugin.Logic
         {
             if (!IsInActiveSession())
                 return true;
+
+            if (DateTime.UtcNow < statusUntil)
+                DrawText(statusText, Cfg.HintColor, scale: 1.5f, y: 0.5f - Cfg.TextPosition);
 
             // Do not draw over the terminal
             if (MyGuiScreenTerminal.IsOpen)

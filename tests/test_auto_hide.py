@@ -104,12 +104,12 @@ def main():
             remap(api, label, key)
         api.screenshot_save(str(t.OUT / "auto-hide-settings.png"))
         close_settings(api)
+        t.press(api, "F7", ["LeftControl", "LeftAlt"])
         t.press(api, "F8", ["LeftControl", "LeftAlt"])
         open_settings(api)
-        assert float(row(api, "Auto-hide radius (m)")[2]["properties"]["text"]) == 7.6
+        assert float(row(api, "Auto-hide radius (m)")[2]["properties"]["text"]) == 7.5
         close_settings(api)
         t.press(api, "F9", ["LeftControl", "LeftAlt"])
-        t.press(api, "F7", ["LeftControl", "LeftAlt"])
         assert not t.aim(api, (0, 2, 0))[
             "hit"
         ], "Rebound toggle did not enable auto-hide"
@@ -145,21 +145,25 @@ def main():
             "PASS sphere follows character and preserves manual mask on toggle-off",
             flush=True,
         )
-        t.press(api, "OemPipe", ["LeftControl", "LeftAlt"])
         open_settings(api)
         set_radius(api, 0)
+        api.control_set(row(api, "Auto-hide blocks")[1]["name"], True)
         close_settings(api)
         assert t.aim(api, (0, 2, 0))["hit"]
         open_settings(api)
+        api.control_set(row(api, "Auto-hide blocks")[1]["name"], False)
         set_radius(api, 50)
+        api.control_set(row(api, "Auto-hide blocks")[1]["name"], True)
         close_settings(api)
         assert not aim_far(api, (0, 2, 0))["hit"]
         open_settings(api)
+        api.control_set(row(api, "Auto-hide blocks")[1]["name"], False)
         set_radius(api, 7.5)
+        api.control_set(row(api, "Auto-hide blocks")[1]["name"], True)
         close_settings(api)
         t.press(api, "OemCloseBrackets", ["LeftControl", "LeftAlt"])
         open_settings(api)
-        assert float(row(api, "Auto-hide radius (m)")[2]["properties"]["text"]) == 7.6
+        assert float(row(api, "Auto-hide radius (m)")[2]["properties"]["text"]) == 7.5
         close_settings(api)
         t.press(api, "OemOpenBrackets", ["LeftControl", "LeftAlt"])
         open_settings(api)
