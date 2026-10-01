@@ -27,7 +27,7 @@ copying without transferring the mask, and replacement blocks starting solid.
 Two multiplayer clients are still needed to check ownership restrictions,
 admin permissions, and another player's unchanged view across a real connection.
 
-`test_cutaway_lifecycle.py` separately checks **Ctrl+Shift+J** and saves/reloads
+`test_cutaway_lifecycle.py` separately checks **Ctrl+Alt+J** and saves/reloads
 the world while a cutaway and auto-hide are active, then checks restored
 collision and saved block colors. This test writes the world, so use only
 disposable test data.

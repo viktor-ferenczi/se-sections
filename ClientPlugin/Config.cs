@@ -54,7 +54,7 @@ namespace ClientPlugin
         private Binding hideSelectedBlocks = new Binding(MyKeys.H);
         private Binding showSelectedBlocks = new Binding(MyKeys.J);
         private Binding restoreGridCutaway = new Binding(MyKeys.H, alt: true);
-        private Binding restoreAllCutaways = new Binding(MyKeys.J, ctrl: true, shift: true);
+        private Binding restoreAllCutaways = new Binding(MyKeys.J, ctrl: true, alt: true);
 
         private Binding toggleAutoHide = new Binding(MyKeys.OemPipe, ctrl: true, alt: true);
         private Binding decreaseAutoHideRadius = new Binding(

@@ -102,7 +102,7 @@ cutting a section. Then use:
   it, and **Shift** shrinks it.
 - **Alt + H**: Reset the selected grid to all visible. This also works while
   choosing the first corner, when aiming at a visible part of the grid.
-- **Ctrl + Shift + J**: Reset all grids to all visible, including a completely
+- **Ctrl + Alt + J**: Reset all grids to all visible, including a completely
   hidden grid. The configuration also has a **Show all blocks on all grids** button.
 
 The box stays active after H or J. Move or resize it, then apply another box to
@@ -136,7 +136,7 @@ and solid.
 Cutaways stay in memory and reset when the world unloads or reloads; they are
 never stored in saves or blueprints.
 
-If you hide a whole grid, use **Ctrl + Shift + J** or **Show all blocks on all
+If you hide a whole grid, use **Ctrl + Alt + J** or **Show all blocks on all
 grids** in the configuration. Both clear the masks without needing to aim at
 the hidden ship. They also turn off auto-hide, subject to the shutdown check
 described below.
@@ -167,7 +167,7 @@ Auto-hide does not edit the manual mask. Turning it off restores only the blocks
 it hid automatically; manually hidden blocks stay hidden. Freshly placed or
 pasted blocks still clear their manual mask cells, but auto-hide can temporarily
 hide them while they touch the sphere. **Show all blocks on all grids** and
-**Ctrl + Shift + J** turn auto-hide off and clear all manual masks. World unload
+**Ctrl + Alt + J** turn auto-hide off and clear all manual masks. World unload
 also turns it off. The radius and key bindings are saved; the on/off state is not.
 
 When collision removal is enabled, auto-hide cannot be turned off while the
