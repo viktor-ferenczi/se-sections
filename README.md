@@ -112,6 +112,11 @@ build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
 
+Existing `Sections.cfg` files retain saved key bindings when the plugin is
+updated. To use these defaults, set **Show selected blocks** to **Shift+H** and
+**Restore all cutaways** to **Ctrl+Alt+H** in the configuration. You do not need
+to delete the config file or reset your other settings.
+
 Treated blocks keep working and stay attached to the ship. In single-player,
 their collision is disabled so the character can fly through them. Multiplayer
 hiding changes visuals only, except when the plugin runs on the host of a

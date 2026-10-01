@@ -8,6 +8,11 @@ Enable copy/paste in the world. In Sections settings, disable cut confirmation
 for this unattended run. Keep opacity at 10%. The test creates its own dynamic
 grid far from the test world's existing ships.
 
+Use the current cutaway bindings: **H** hides, **Shift+H** shows, **Alt+H**
+restores one grid, and **Ctrl+Alt+H** restores all grids. Existing `Sections.cfg`
+files retain earlier bindings, so set these in the plugin configuration before
+running the tests; rebuilding the plugin does not replace saved bindings.
+
 ```bash
 SE_REMOTE_URL=http://127.0.0.1:24188 \
   /home/viktor/.codex/skills/se-remote/.venv/bin/python tests/test_cutaway.py
