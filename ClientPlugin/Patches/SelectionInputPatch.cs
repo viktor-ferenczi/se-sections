@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using Sandbox.Engine;
 using VRage.Input;
 using VRage.Utils;
 
@@ -30,5 +31,12 @@ namespace ClientPlugin.Patches
             __result = false;
             return false;
         }
+    }
+
+    [HarmonyPatch(typeof(MyGeneralStats), nameof(MyGeneralStats.ToggleProfiler))]
+    public static class CutawayProfilerInputPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix() => !Logic.Logic.Static.ShouldSuppressProfilerToggle();
     }
 }

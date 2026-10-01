@@ -115,7 +115,8 @@ All these keys can be rebound.
 While Sections selection is active, the cutaway and auto-hide shortcuts stay
 reserved, even when an action cannot be repeated. Pressing H again after hiding
 blocks does not change the HUD signal mode. The same applies to Shift+H after
-showing blocks. Movement and looking remain available.
+showing blocks. Ctrl+Shift+H also consumes the conflicting Ctrl+H profiler
+shortcut. Movement and looking remain available.
 
 Existing `Sections.cfg` files retain saved key bindings when the plugin is
 updated. To use these defaults, set **Show selected blocks** to **Shift+H** and

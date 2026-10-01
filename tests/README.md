@@ -36,7 +36,8 @@ admin permissions, and another player's unchanged view across a real connection.
 bindings. It checks that repeated H and Shift+H presses leave HUD signals unchanged
 while selecting, that movement still works, and that normal H and Enter handling
 returns after leaving selection. It also checks that Ctrl+Shift+H clears the
-manual mask and disables auto-hide while outside blocks. It does not take screenshots.
+manual mask and disables auto-hide while outside blocks. It does not take screenshots. Also verify that Ctrl+Shift+H does not toggle
+the rendering profiler; plain Ctrl+H outside selection should still toggle it.
 
 `test_auto_hide_radius.py` checks the active radius against a cube just beyond
 the configured sphere. Increasing 7.5 m to 7.6 m must remove its collision

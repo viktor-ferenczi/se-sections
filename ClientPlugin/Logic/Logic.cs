@@ -146,6 +146,15 @@ namespace ClientPlugin.Logic
                 );
         }
 
+        public bool ShouldSuppressProfilerToggle() =>
+            IsInActiveSession()
+            && MyScreenManager.GetScreenWithFocus() is MyGuiScreenGamePlay
+            && MyInput.Static.IsNewKeyPressed(MyKeys.H)
+            && (
+                (state != State.Inactive && CutawayKeys.Contains(MyKeys.H))
+                || Cfg.RestoreAllCutaways.HasPressed(MyInput.Static)
+            );
+
         private MyKeys[] CutawayKeys =>
             new[]
             {
