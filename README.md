@@ -93,6 +93,8 @@ setting for the operation.
 
 ### Cutaways for editing live ships
 
+[![Watch the cutaway and auto-hide demo](https://img.youtube.com/vi/Ek4lqoZFOqE/hqdefault.jpg)](https://youtu.be/Ek4lqoZFOqE)
+
 Select a box with **NumPad 0** and the two corner clicks, just as for copying or
 cutting a section. Then use:
 
@@ -109,9 +111,6 @@ The box stays active after H or J. Move or resize it, then apply another box to
 build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
-
-*Screenshot placeholder: a live ship with a cutaway built from several boxes,
-with the selection brush and hide/show hints visible.*
 
 Treated blocks keep working and stay attached to the ship. In single-player,
 their collision is disabled so the character can fly through them. Multiplayer
@@ -140,9 +139,6 @@ If you hide a whole grid, use **Ctrl + Alt + J** or **Show all blocks on all
 grids** in the configuration. Both clear the masks without needing to aim at
 the hidden ship. They also turn off auto-hide, subject to the shutdown check
 described below.
-
-*Screenshot placeholder: the configuration's Show all blocks on all grids
-button and the ship restored to full visibility.*
 
 In multiplayer, cutaways require creative mode or admin rights. Non-admin
 players can apply them only to grids they own; admins can apply them to any grid.
@@ -179,9 +175,6 @@ character. World unload and permission-loss cleanup still restore blocks.
 
 In visual-only multiplayer, turning off auto-hide is allowed even when the
 character overlaps a hidden block, since it does not restore collision.
-
-*Screenshot placeholder: auto-hide revealing the interior around the character,
-with the radius setting shown.*
 
 ### Subgrid support
 
@@ -326,9 +319,6 @@ Auto-hide can be enabled only in a loaded world where hiding is allowed.
 increments; confirmation applies the value and cancellation leaves it unchanged.
 The opacity and saturation defaults are both 50%. Existing saved settings
 keep their values.
-
-*Screenshot placeholder: the updated Features, Auto-hide, and Overlay sections,
-plus the Ctrl-click numeric-entry dialog.*
 
 ![Configuration](doc/ConfigDialog.png "Config Dialog")
 
