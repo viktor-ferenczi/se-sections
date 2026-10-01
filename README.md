@@ -112,10 +112,10 @@ build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
 
-While the yellow selection box is active, its operation keys and mouse buttons
-are reserved for Sections, even if an action is unavailable or the modifiers
-do not match. They do not trigger their normal game actions. Movement and
-looking remain available.
+While Sections selection is active, the cutaway and auto-hide shortcuts stay
+reserved, even when an action cannot be repeated. Pressing H again after hiding
+blocks does not change the HUD signal mode. The same applies to Shift+H after
+showing blocks. Movement and looking remain available.
 
 Existing `Sections.cfg` files retain saved key bindings when the plugin is
 updated. To use these defaults, set **Show selected blocks** to **Shift+H** and

@@ -1,4 +1,4 @@
-"""Selection keys stay reserved even when their modifiers do not match."""
+"""Cutaway shortcuts do not fall through to HUD controls on repeated presses."""
 
 import time
 
@@ -20,15 +20,39 @@ def main():
             xml=t.blueprint(), position=t.ORIGIN, forward=(0, 0, -1), up=(0, 1, 0)
         )[0]["entityId"]
         time.sleep(1)
+        cursor = api.get_hud_notifications()["latest"]
+        t.press(api, "H")
+        assert any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Baseline H did not change the HUD signal mode"
+        cursor = api.get_hud_notifications()["latest"]
+        t.press(api, "NumPad0")
+        t.press(api, "H")
+        t.press(api, "H")
+        assert not any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "H fell through while choosing the first corner"
+        t.press(api, "Escape")
         t.select(api, (0, 0, 0), (4, 4, 0))
-        for modifiers in (["LeftShift"], ["LeftControl", "LeftShift"]):
-            api.key("Enter", modifiers, hold_frames=20)
-            time.sleep(0.4)
-            assert "Chat" not in api.get_focused_screen()["type"], (
-                "Reserved Enter opened chat instead of remaining in box selection",
-                modifiers,
-            )
-        print("PASS mismatched modifiers and held keys stay reserved")
+        cursor = api.get_hud_notifications()["latest"]
+        t.press(api, "H")
+        t.press(api, "H")
+        t.press(api, "H")
+        assert not any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Repeated H presses changed the HUD signal mode"
+        t.press(api, "H", ["LeftShift"])
+        t.press(api, "H", ["LeftShift"])
+        assert not any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Repeated show presses changed the HUD signal mode"
+        print(
+            "PASS first-corner and repeated hide/show presses leave HUD signals unchanged"
+        )
         before = api.get_character()["position"]
         api.key("D", hold_frames=30)
         time.sleep(0.6)
@@ -36,6 +60,12 @@ def main():
         assert sum((a - b) ** 2 for a, b in zip(after, before)) > 0.01
         print("PASS movement remains available with the yellow box active")
         t.press(api, "Escape")
+        cursor = api.get_hud_notifications()["latest"]
+        t.press(api, "H")
+        assert any(
+            "Signals switched" in item["text"]
+            for item in api.get_hud_notifications(after=cursor)["notifications"]
+        ), "Leaving selection did not restore the HUD signal control"
         t.press(api, "Enter", ["LeftControl", "LeftShift"])
         assert (
             "Chat" in api.get_focused_screen()["type"]

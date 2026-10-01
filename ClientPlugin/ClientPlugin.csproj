@@ -497,6 +497,7 @@
     <Compile Include="Logic\Reference.cs" />
     <Compile Include="Patches\MyBlueprintUtilsPatch.cs" />
     <Compile Include="Patches\MyCubeBuilderPatch.cs" />
+    <Compile Include="Patches\SelectionInputPatch.cs" />
     <Compile Include="Patches\MyCubeGridPatch.cs" />
     <Compile Include="Patches\MyGridClipboardPatch.cs" />
     <Compile Include="Patches\MyTerminalBlockPatch.cs" />

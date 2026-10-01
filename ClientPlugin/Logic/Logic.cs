@@ -125,6 +125,39 @@ namespace ClientPlugin.Logic
             movingThumbnailProgress = 0;
         }
 
+        public bool ShouldSuppressGameControl(MyStringId controlId)
+        {
+            if (
+                state == State.Inactive
+                || !IsInActiveSession()
+                || !(MyScreenManager.GetScreenWithFocus() is MyGuiScreenGamePlay)
+            )
+                return false;
+            var input = MyInput.Static;
+            var control = input.GetGameControl(controlId);
+            return control != null
+                && CutawayKeys.Any(key =>
+                    key != MyKeys.None
+                    && input.IsKeyPress(key)
+                    && (
+                        control.GetKeyboardControl() == key
+                        || control.GetSecondKeyboardControl() == key
+                    )
+                );
+        }
+
+        private MyKeys[] CutawayKeys =>
+            new[]
+            {
+                Cfg.HideSelectedBlocks.Key,
+                Cfg.ShowSelectedBlocks.Key,
+                Cfg.RestoreGridCutaway.Key,
+                Cfg.RestoreAllCutaways.Key,
+                Cfg.ToggleAutoHide.Key,
+                Cfg.DecreaseAutoHideRadius.Key,
+                Cfg.IncreaseAutoHideRadius.Key,
+            };
+
         public bool HandleGameInput()
         {
             if (!IsInActiveSession())
@@ -508,34 +541,8 @@ namespace ClientPlugin.Logic
                 box = b;
             }
 
-            // Reserve box controls even when modifiers or permissions prevent an action.
-            // Returning true also stops the gameplay screen's original input handling.
-            return handled || IsSelectionInput(input);
+            return handled || CutawayKeys.Any(key => key != MyKeys.None && input.IsKeyPress(key));
         }
-
-        private bool IsSelectionInput(IMyInput input) =>
-            input.IsLeftMousePressed()
-            || input.IsRightMousePressed()
-            || new[]
-            {
-                Cfg.HideSelectedBlocks.Key,
-                Cfg.ShowSelectedBlocks.Key,
-                Cfg.RestoreGridCutaway.Key,
-                Cfg.RestoreAllCutaways.Key,
-                Cfg.SaveSelectedBlocks.Key,
-                Cfg.DeleteSelectedBlocks.Key,
-                Cfg.ResetSelection.Key,
-                Cfg.ToggleAutoHide.Key,
-                Cfg.DecreaseAutoHideRadius.Key,
-                Cfg.IncreaseAutoHideRadius.Key,
-            }.Any(key => key != MyKeys.None && input.IsKeyPress(key))
-            || ResizeControls.Any(control =>
-                MyControllerHelper.IsControl(
-                    MyStringId.NullOrEmpty,
-                    control,
-                    MyControlStateType.PRESSED
-                )
-            );
 
         private void HandleTakingScreenshot()
         {

@@ -33,8 +33,9 @@ Two multiplayer clients are still needed to check ownership restrictions,
 admin permissions, and another player's unchanged view across a real connection.
 
 `test_selection_input.py` requires a disposable creative world and the default
-bindings. It checks that Enter stays reserved with unsupported modifiers and while held, that
-movement still works, and that Enter opens chat normally after leaving the box.
+bindings. It checks that repeated H and Shift+H presses leave HUD signals unchanged
+while selecting, that movement still works, and that normal H and Enter handling
+returns after leaving selection.
 It does not take screenshots.
 
 `test_auto_hide_radius.py` checks the active radius against a cube just beyond
