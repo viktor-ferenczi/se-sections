@@ -99,15 +99,15 @@ Select a box with **NumPad 0** and the two corner clicks, just as for copying or
 cutting a section. Then use:
 
 - **H**: Add the selected blocks to this grid's cutaway mask.
-- **J**: Remove the selected blocks from the mask, making them solid again.
+- **Shift + H**: Remove the selected blocks from the mask, making them solid again.
 - **Alt + block rotation keys**: Move the box. The existing rotation keys grow
   it, and **Shift** shrinks it.
 - **Alt + H**: Reset the selected grid to all visible. This also works while
   choosing the first corner, when aiming at a visible part of the grid.
-- **Ctrl + Alt + J**: Reset all grids to all visible, including a completely
+- **Ctrl + Alt + H**: Reset all grids to all visible, including a completely
   hidden grid. The configuration also has a **Show all blocks on all grids** button.
 
-The box stays active after H or J. Move or resize it, then apply another box to
+The box stays active after H or Shift+H. Move or resize it, then apply another box to
 build up or remove parts of the mask. Moving the box does not change the mask
 until you apply it. **Escape** leaves the selection and keeps the cutaway.
 All these keys can be rebound.
@@ -126,7 +126,7 @@ rendering without changing the saved block colors.
 grid-aligned bounding box must be inside the selection. With it on, any overlap
 includes the whole block, even when some of it extends outside the box. The same
 setting applies to cutaways, cut, copy, delete, and section blueprints. **Ctrl**
-inverts the setting for an operation, including H, J, and the copy/cut mouse buttons.
+inverts the setting for an operation, including H, Shift+H, and the copy/cut mouse buttons.
 
 The mask belongs to one grid instance and is never copied to another grid.
 Newly placed or pasted blocks clear the mask cells they occupy and start visible
@@ -135,7 +135,7 @@ and solid.
 Cutaways stay in memory and reset when the world unloads or reloads; they are
 never stored in saves or blueprints.
 
-If you hide a whole grid, use **Ctrl + Alt + J** or **Show all blocks on all
+If you hide a whole grid, use **Ctrl + Alt + H** or **Show all blocks on all
 grids** in the configuration. Both clear the masks without needing to aim at
 the hidden ship. They also turn off auto-hide, subject to the shutdown check
 described below.
@@ -163,7 +163,7 @@ Auto-hide does not edit the manual mask. Turning it off restores only the blocks
 it hid automatically; manually hidden blocks stay hidden. Freshly placed or
 pasted blocks still clear their manual mask cells, but auto-hide can temporarily
 hide them while they touch the sphere. **Show all blocks on all grids** and
-**Ctrl + Alt + J** turn auto-hide off and clear all manual masks. World unload
+**Ctrl + Alt + H** turn auto-hide off and clear all manual masks. World unload
 also turns it off. The radius and key bindings are saved; the on/off state is not.
 
 When collision removal is enabled, auto-hide cannot be turned off while the

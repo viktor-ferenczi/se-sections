@@ -189,7 +189,7 @@ def copied_mask_check(api: RemoteAPI, grid_id: int) -> None:
     press(api, "Escape")
     if api.get_state()["paused"]:
         press(api, "Escape")
-    press(api, "J", ["LeftControl", "LeftAlt"])
+    press(api, "H", ["LeftControl", "LeftAlt"])
     print("PASS copied and pasted grid has no inherited hidden cells", flush=True)
 
 
@@ -204,7 +204,7 @@ def main() -> None:
         assert api.get_state().get("active"), "Load a disposable creative world first"
         if api.get_state()["paused"]:
             press(api, "Escape")
-        press(api, "J", ["LeftControl", "LeftAlt"])
+        press(api, "H", ["LeftControl", "LeftAlt"])
         if api.get_character().get("controlledEntity"):
             api.character_use()
             time.sleep(0.5)
@@ -243,7 +243,7 @@ def main() -> None:
         press(api, "H")
         assert not aim(api, (4, 2, 0))["hit"]
         assert not aim(api, (0, 2, 0))["hit"], "Second box replaced the first mask"
-        press(api, "J")
+        press(api, "H", ["LeftShift"])
         press(api, "Escape")
         assert aim(api, (4, 2, 0))["hit"]
         assert not aim(api, (0, 2, 0))["hit"]
@@ -266,7 +266,7 @@ def main() -> None:
         assert not aim(api, (7, 2, 0))[
             "hit"
         ], "Inclusion policy failed to include the whole refinery"
-        press(api, "J", including)
+        press(api, "H", ["LeftShift", *(including or [])])
         press(api, "Escape")
         assert aim(api, (7, 2, 0))["hit"]
         print("PASS multi-cell bounds and Ctrl inversion", flush=True)
@@ -280,7 +280,7 @@ def main() -> None:
         ), "Cutaway tint changed the saved block color"
         assert not aim(api, (5, 0, 0))["hit"], "Hidden battery still collides"
         print("PASS hidden battery powers hidden light", flush=True)
-        press(api, "J", ["LeftControl", "LeftAlt"])
+        press(api, "H", ["LeftControl", "LeftAlt"])
         assert aim(api, (0, 2, 0))["hit"]
         assert aim(api, (5, 0, 0))["hit"]
         print("PASS global all-visible reset", flush=True)
@@ -292,7 +292,7 @@ def main() -> None:
         # Recovery must not require an aim target on the hidden ship.
         assert not aim(api, (0, 2, 0))["hit"]
         assert not aim(api, (7, 2, 0))["hit"]
-        press(api, "J", ["LeftControl", "LeftAlt"])
+        press(api, "H", ["LeftControl", "LeftAlt"])
         assert aim(api, (0, 2, 0))["hit"]
         assert aim(api, (7, 2, 0))["hit"]
         print("PASS entirely hidden grid can be recovered without aiming", flush=True)

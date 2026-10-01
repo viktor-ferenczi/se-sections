@@ -34,9 +34,9 @@ def main() -> None:
         t.select(api, (0, 0, 0), (0, 4, 0))
         t.press(api, "H")
         assert not t.aim(api, (0, 2, 0))["hit"]
-        t.press(api, "J", ["LeftControl", "LeftAlt"])
+        t.press(api, "H", ["LeftControl", "LeftAlt"])
         assert t.aim(api, (0, 2, 0))["hit"]
-        print("PASS Ctrl+Alt+J restores all grids", flush=True)
+        print("PASS Ctrl+Alt+H restores all grids", flush=True)
         t.select(api, (0, 0, 0), (0, 4, 0))
         t.press(api, "H")
         t.press(api, "Escape")

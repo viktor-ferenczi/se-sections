@@ -57,7 +57,7 @@ def main():
         time.sleep(0.3)
         assert settings.row(api, "Auto-hide blocks")[1]["properties"]["isChecked"]
         settings.close_settings(api)
-        t.press(api, "J", ["LeftControl", "LeftAlt"])
+        t.press(api, "H", ["LeftControl", "LeftAlt"])
         assert enabled(api), "Global recovery bypassed shutdown protection"
         print(
             "PASS config checkbox, reset button, and global recovery respect the guard",
