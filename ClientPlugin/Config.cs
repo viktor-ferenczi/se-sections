@@ -1,12 +1,12 @@
-using ClientPlugin.Settings;
-using ClientPlugin.Settings.Elements;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Xml.Serialization;
+using ClientPlugin.Settings;
+using ClientPlugin.Settings.Elements;
 using VRage.Input;
 using VRage.Utils;
 using VRageMath;
-
 
 namespace ClientPlugin
 {
@@ -24,6 +24,11 @@ namespace ClientPlugin
         private bool handleSubgrids = true;
         private bool disablePlacementTest = true;
         private bool restoreToolbars = true;
+        private bool includeIntersectingBlocks;
+        private float hiddenBlockOpacity = 50f;
+        private float hiddenBlockSaturation = 50f;
+        private float autoHideRadius = 7.5f;
+        private bool autoHideBlocks;
 
         private bool showHints = true;
         private bool showSize = true;
@@ -46,9 +51,27 @@ namespace ClientPlugin
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
         private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
         private Binding clearBlockReferenceData = new Binding(MyKeys.OemMinus);
+        private Binding hideSelectedBlocks = new Binding(MyKeys.H);
+        private Binding showSelectedBlocks = new Binding(MyKeys.H, shift: true);
+        private Binding restoreGridCutaway = new Binding(MyKeys.H, alt: true);
+        private Binding restoreAllCutaways = new Binding(MyKeys.H, ctrl: true, shift: true);
+
+        private Binding toggleAutoHide = new Binding(MyKeys.OemPipe, ctrl: true, alt: true);
+        private Binding decreaseAutoHideRadius = new Binding(
+            MyKeys.OemOpenBrackets,
+            ctrl: true,
+            alt: true
+        );
+        private Binding increaseAutoHideRadius = new Binding(
+            MyKeys.OemCloseBrackets,
+            ctrl: true,
+            alt: true
+        );
 
         // Not configurable yet
-        public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
+        public readonly MyStringId BlockMaterial = MyStringId.GetOrCompute(
+            "ContainerBorderSelected"
+        );
         public readonly MyStringId BoxMaterial = MyStringId.GetOrCompute("ContainerBorderSelected");
 
         #endregion
@@ -58,7 +81,9 @@ namespace ClientPlugin
         public readonly string Title = "Sections";
 
         [Separator("Confirmations")]
-        [Checkbox(description: "Ask for confirmation before deleting the selected blocks (Backspace)")]
+        [Checkbox(
+            description: "Ask for confirmation before deleting the selected blocks (Backspace)"
+        )]
         public bool DeleteConfirmation
         {
             get => deleteConfirmation;
@@ -80,7 +105,9 @@ namespace ClientPlugin
             set => SetField(ref sectionsSubdirectory, value);
         }
 
-        [Checkbox(description: "Opens a dialog box to rename the blueprint on saving and confirm overwrite (disables automatic numbering)")]
+        [Checkbox(
+            description: "Opens a dialog box to rename the blueprint on saving and confirm overwrite (disables automatic numbering)"
+        )]
         public bool RenameBlueprint
         {
             get => renameBlueprint;
@@ -88,32 +115,129 @@ namespace ClientPlugin
         }
 
         [Separator("Features")]
-        [Checkbox(description: "Change the drag position on pasting grids, so you can point directly where the origin block should go")]
+        [Checkbox(
+            description: "Change the drag position on pasting grids, so you can point directly where the origin block should go"
+        )]
         public bool FixPastePosition
         {
             get => fixPastePosition;
             set => SetField(ref fixPastePosition, value);
         }
 
-        [Checkbox(description: "Handle subgrids together with mechanical connection blocks (the ones which would be disconnected)")]
+        [Checkbox(
+            label: "Include intersecting blocks",
+            description: "Include whole blocks whose grid-aligned bounding boxes overlap the selection; Ctrl inverts this for cutaway, cut, copy, delete, and blueprint operations"
+        )]
+        public bool IncludeIntersectingBlocks
+        {
+            get => includeIntersectingBlocks;
+            set => SetField(ref includeIntersectingBlocks, value);
+        }
+
+        [Slider(
+            0f,
+            100f,
+            1f,
+            label: "Hidden block opacity (%)",
+            description: "Opacity of blocks in a cutaway; zero makes them invisible"
+        )]
+        public float HiddenBlockOpacity
+        {
+            get => hiddenBlockOpacity;
+            set => SetField(ref hiddenBlockOpacity, MathHelper.Clamp(value, 0f, 100f));
+        }
+
+        [Slider(
+            0f,
+            100f,
+            1f,
+            label: "Hidden block saturation (%)",
+            description: "Saturation multiplier for cutaway blocks; zero makes them gray"
+        )]
+        public float HiddenBlockSaturation
+        {
+            get => hiddenBlockSaturation;
+            set => SetField(ref hiddenBlockSaturation, MathHelper.Clamp(value, 0f, 100f));
+        }
+
+        [Checkbox(
+            description: "Handle subgrids together with mechanical connection blocks (the ones which would be disconnected)"
+        )]
         public bool HandleSubgrids
         {
             get => handleSubgrids;
             set => SetField(ref handleSubgrids, value);
         }
 
-        [Checkbox(description: "Holding Alt disables the placement test while pasting, use this only with great care")]
+        [Checkbox(
+            description: "Holding Alt disables the placement test while pasting, use this only with great care"
+        )]
         public bool DisablePlacementTest
         {
             get => disablePlacementTest;
             set => SetField(ref disablePlacementTest, value);
         }
 
-        [Checkbox(description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)")]
+        [Checkbox(
+            description: "Backup and restore associated blocks (toolbar slots, event and turret controllers)"
+        )]
         public bool RestoreToolbars
         {
             get => restoreToolbars;
             set => SetField(ref restoreToolbars, value);
+        }
+
+        [Separator("Auto-hide")]
+        [XmlIgnore]
+        [Checkbox(
+            label: "Auto-hide blocks",
+            description: "Temporarily hide blocks touching a sphere around the character; requires cutaway permission"
+        )]
+        public bool AutoHideBlocks
+        {
+            get => autoHideBlocks;
+            set => SetField(ref autoHideBlocks, Logic.Cutaway.SetAutoHide(value));
+        }
+
+        internal void StopAutoHide() =>
+            SetField(ref autoHideBlocks, Logic.Cutaway.SetAutoHide(false, force: true));
+
+        [Slider(
+            0f,
+            50f,
+            0.1f,
+            label: "Auto-hide radius (m)",
+            description: "Default radius loaded each time auto-hide is enabled; from 0 to 50 meters in 0.1 meter steps. Hotkeys temporarily adjust the active radius."
+        )]
+        public float AutoHideRadius
+        {
+            get => autoHideRadius;
+            set =>
+                SetField(
+                    ref autoHideRadius,
+                    (float)System.Math.Round(MathHelper.Clamp(value, 0f, 50f), 1)
+                );
+        }
+
+        [Keybind(description: "Toggle auto-hide blocks")]
+        public Binding ToggleAutoHide
+        {
+            get => toggleAutoHide;
+            set => SetField(ref toggleAutoHide, value);
+        }
+
+        [Keybind(description: "Decrease auto-hide radius by 0.1 meter")]
+        public Binding DecreaseAutoHideRadius
+        {
+            get => decreaseAutoHideRadius;
+            set => SetField(ref decreaseAutoHideRadius, value);
+        }
+
+        [Keybind(description: "Increase auto-hide radius by 0.1 meter")]
+        public Binding IncreaseAutoHideRadius
+        {
+            get => increaseAutoHideRadius;
+            set => SetField(ref increaseAutoHideRadius, value);
         }
 
         [Separator("Overlay")]
@@ -131,7 +255,12 @@ namespace ClientPlugin
             set => SetField(ref showSize, value);
         }
 
-        [Slider(0f, 0.9f, 0.01f, description: "Vertical position of the box size and hints on the screen")]
+        [Slider(
+            0f,
+            0.9f,
+            0.01f,
+            description: "Vertical position of the box size and hints on the screen"
+        )]
         public float TextPosition
         {
             get => textPosition;
@@ -159,7 +288,13 @@ namespace ClientPlugin
             set => SetField(ref sizeColor, value);
         }
 
-        [Slider(0f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Text shadow offset (set to zero to turn off text shadows)")]
+        [Slider(
+            0f,
+            10f,
+            1f,
+            SliderAttribute.SliderType.Integer,
+            description: "Text shadow offset (set to zero to turn off text shadows)"
+        )]
         public int TextShadowOffset
         {
             get => textShadowOffset;
@@ -174,7 +309,13 @@ namespace ClientPlugin
         }
 
         [Separator("Block Selection")]
-        [Slider(1f, 10f, 1f, SliderAttribute.SliderType.Integer, description: "Density of the highlights (number of overdraws)")]
+        [Slider(
+            1f,
+            10f,
+            1f,
+            SliderAttribute.SliderType.Integer,
+            description: "Density of the highlights (number of overdraws)"
+        )]
         public int HighlightDensity
         {
             get => highlightDensity;
@@ -252,6 +393,51 @@ namespace ClientPlugin
             set => SetField(ref clearBlockReferenceData, value);
         }
 
+        [Keybind(
+            description: "Add selected blocks to the grid's cutaway mask; Ctrl inverts Include intersecting blocks"
+        )]
+        public Binding HideSelectedBlocks
+        {
+            get => hideSelectedBlocks;
+            set => SetField(ref hideSelectedBlocks, value);
+        }
+
+        [Keybind(
+            description: "Remove selected blocks from the grid's cutaway mask; Ctrl inverts Include intersecting blocks"
+        )]
+        public Binding ShowSelectedBlocks
+        {
+            get => showSelectedBlocks;
+            set => SetField(ref showSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Reset the selected or aimed grid to all visible")]
+        public Binding RestoreGridCutaway
+        {
+            get => restoreGridCutaway;
+            set => SetField(ref restoreGridCutaway, value);
+        }
+
+        [Button(
+            label: "Show all blocks on all grids",
+            description: "Reset every cutaway, including entirely hidden grids"
+        )]
+        public System.Action ShowAllBlocks =>
+            () =>
+            {
+                Logic.Cutaway.Restore();
+                Plugin.Instance.RefreshConfigDialog();
+            };
+
+        [Keybind(
+            description: "Restore all hidden sections, including grids that are entirely hidden"
+        )]
+        public Binding RestoreAllCutaways
+        {
+            get => restoreAllCutaways;
+            set => SetField(ref restoreAllCutaways, value);
+        }
+
         #endregion
 
         #region Property change notification bilerplate
@@ -266,9 +452,14 @@ namespace ClientPlugin
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        private bool SetField<T>(
+            ref T field,
+            T value,
+            [CallerMemberName] string propertyName = null
+        )
         {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
             field = value;
             OnPropertyChanged(propertyName);
             return true;

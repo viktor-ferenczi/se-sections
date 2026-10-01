@@ -21,21 +21,31 @@ namespace ClientPlugin.Settings.Elements
         {
             if (Key == MyKeys.None)
                 return "None";
-            
+
             var ctrl = Ctrl ? "Ctrl+" : "";
             var alt = Alt ? "Alt+" : "";
             var shift = Shift ? "Shift+" : "";
             return $"{ctrl}{alt}{shift}{Key}";
         }
 
-        public bool IsPressed(IMyInput input) => Key != MyKeys.None && AreModifiersMatch(input) && input.IsKeyPress(Key);
-        public bool HasPressed(IMyInput input) => Key != MyKeys.None && AreModifiersMatch(input) && input.IsNewKeyPressed(Key);
+        public bool IsPressed(IMyInput input) =>
+            Key != MyKeys.None && AreModifiersMatch(input) && input.IsKeyPress(Key);
+
+        public bool HasPressed(IMyInput input) =>
+            Key != MyKeys.None && AreModifiersMatch(input) && input.IsNewKeyPressed(Key);
+
+        public bool HasPressedIgnoringCtrl(IMyInput input)
+        {
+            var binding = this;
+            binding.Ctrl = input.IsAnyCtrlKeyPressed();
+            return binding.HasPressed(input);
+        }
 
         private bool AreModifiersMatch(IMyInput input)
         {
-            return input.IsAnyCtrlKeyPressed() == Ctrl &&
-                   input.IsAnyAltKeyPressed() == Alt &&
-                   input.IsAnyShiftKeyPressed() == Shift;
+            return input.IsAnyCtrlKeyPressed() == Ctrl
+                && input.IsAnyAltKeyPressed() == Alt
+                && input.IsAnyShiftKeyPressed() == Shift;
         }
     }
 }
