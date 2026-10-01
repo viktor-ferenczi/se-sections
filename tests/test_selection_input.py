@@ -3,6 +3,7 @@
 import time
 
 import test_cutaway as t
+from test_auto_hide_safety import enabled
 
 
 def main():
@@ -72,6 +73,20 @@ def main():
         ), "Leaving selection did not restore the original Enter action"
         t.press(api, "Escape")
         print("PASS leaving selection restores normal key handling")
+        t.select(api, (0, 0, 0), (4, 4, 0))
+        t.press(api, "H")
+        t.press(api, "Escape")
+        assert not t.aim(api, (0, 2, 0))["hit"]
+        t.press(api, "OemPipe", ["LeftControl", "LeftAlt"])
+        assert enabled(api)
+        t.press(api, "H", ["LeftControl", "LeftShift"])
+        assert not enabled(api), "Ctrl+Shift+H did not stop auto-hide"
+        assert t.aim(api, (0, 2, 0))[
+            "hit"
+        ], "Ctrl+Shift+H did not restore manual cutaways"
+        print(
+            "PASS Ctrl+Shift+H restores cutaways and stops auto-hide while outside blocks"
+        )
         api.close_grid(t.GRID_ID)
 
 

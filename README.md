@@ -104,7 +104,7 @@ cutting a section. Then use:
   it, and **Shift** shrinks it.
 - **Alt + H**: Reset the selected grid to all visible. This also works while
   choosing the first corner, when aiming at a visible part of the grid.
-- **Ctrl + Alt + H**: Reset all grids to all visible, including a completely
+- **Ctrl + Shift + H**: Reset all grids to all visible, including a completely
   hidden grid. The configuration also has a **Show all blocks on all grids** button.
 
 The box stays active after H or Shift+H. Move or resize it, then apply another box to
@@ -119,7 +119,7 @@ showing blocks. Movement and looking remain available.
 
 Existing `Sections.cfg` files retain saved key bindings when the plugin is
 updated. To use these defaults, set **Show selected blocks** to **Shift+H** and
-**Restore all cutaways** to **Ctrl+Alt+H** in the configuration. You do not need
+**Restore all cutaways** to **Ctrl+Shift+H** in the configuration. You do not need
 to delete the config file or reset your other settings.
 
 Treated blocks keep working and stay attached to the ship. In single-player,
@@ -145,7 +145,7 @@ and solid.
 Cutaways stay in memory and reset when the world unloads or reloads; they are
 never stored in saves or blueprints.
 
-If you hide a whole grid, use **Ctrl + Alt + H** or **Show all blocks on all
+If you hide a whole grid, use **Ctrl + Shift + H** or **Show all blocks on all
 grids** in the configuration. Both clear the masks without needing to aim at
 the hidden ship. They also turn off auto-hide, subject to the shutdown check
 described below.
@@ -181,7 +181,7 @@ Auto-hide does not edit the manual mask. Turning it off restores only the blocks
 it hid automatically; manually hidden blocks stay hidden. Freshly placed or
 pasted blocks still clear their manual mask cells, but auto-hide can temporarily
 hide them while they touch the sphere. **Show all blocks on all grids** and
-**Ctrl + Alt + H** turn auto-hide off and clear all manual masks. World unload
+**Ctrl + Shift + H** turn auto-hide off and clear all manual masks. World unload
 also turns it off. The configured default radius and key bindings are saved;
 the active radius and on/off state are not.
 

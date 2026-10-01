@@ -9,7 +9,7 @@ for this unattended run. Keep opacity at 10%. The test creates its own dynamic
 grid far from the test world's existing ships.
 
 Use the current cutaway bindings: **H** hides, **Shift+H** shows, **Alt+H**
-restores one grid, and **Ctrl+Alt+H** restores all grids. Existing `Sections.cfg`
+restores one grid, and **Ctrl+Shift+H** restores all grids. Existing `Sections.cfg`
 files retain earlier bindings, so set these in the plugin configuration before
 running the tests; rebuilding the plugin does not replace saved bindings.
 
@@ -35,8 +35,8 @@ admin permissions, and another player's unchanged view across a real connection.
 `test_selection_input.py` requires a disposable creative world and the default
 bindings. It checks that repeated H and Shift+H presses leave HUD signals unchanged
 while selecting, that movement still works, and that normal H and Enter handling
-returns after leaving selection.
-It does not take screenshots.
+returns after leaving selection. It also checks that Ctrl+Shift+H clears the
+manual mask and disables auto-hide while outside blocks. It does not take screenshots.
 
 `test_auto_hide_radius.py` checks the active radius against a cube just beyond
 the configured sphere. Increasing 7.5 m to 7.6 m must remove its collision
@@ -44,7 +44,7 @@ without changing the configuration. Disabling/re-enabling must reload the
 default, and editing the default while active must take effect only on the next
 enable. It also checks decreasing by 0.1 m and takes no screenshots.
 
-`test_cutaway_lifecycle.py` separately checks **Ctrl+Alt+H** and saves/reloads
+`test_cutaway_lifecycle.py` separately checks **Ctrl+Shift+H** and saves/reloads
 the world while a cutaway and auto-hide are active, then checks restored
 collision and saved block colors. This test writes the world, so use only
 disposable test data.
