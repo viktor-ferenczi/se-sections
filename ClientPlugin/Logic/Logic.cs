@@ -135,7 +135,10 @@ namespace ClientPlugin.Logic
             var input = MyInput.Static;
             if (state == State.Inactive && !Cfg.RestoreAllCutaways.IsPressed(input))
                 return false;
-            var keys = state != State.Inactive ? CutawayKeys : new[] { Cfg.RestoreAllCutaways.Key };
+            var keys =
+                state == State.SelectingFirst ? CutawayKeys.Concat(SingleBlockKeys)
+                : state != State.Inactive ? CutawayKeys
+                : new[] { Cfg.RestoreAllCutaways.Key };
             var control = input.GetGameControl(controlId);
             return control != null
                 && keys.Any(key =>
@@ -168,6 +171,9 @@ namespace ClientPlugin.Logic
                 Cfg.DecreaseAutoHideRadius.Key,
                 Cfg.IncreaseAutoHideRadius.Key,
             };
+
+        // The defaults are block rotation keys, which must not act on a block in hand.
+        private MyKeys[] SingleBlockKeys => new[] { Cfg.CopyAimedBlock.Key, Cfg.CutAimedBlock.Key };
 
         public bool HandleGameInput()
         {
@@ -313,6 +319,21 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
+            var copy = Cfg.CopyAimedBlock.HasPressed(input);
+            if ((copy || Cfg.CutAimedBlock.HasPressed(input)) && CanEditSections())
+            {
+                // The box is exactly this block, so it is fully enclosed.
+                box = new BoundingBoxI(firstBlock.Min, firstBlock.Max);
+                if (copy)
+                {
+                    Copy(false);
+                    Reset();
+                }
+                else
+                    ConfirmCut(false, "block");
+                return true;
+            }
+
             if (input.IsNewLeftMousePressed())
             {
                 if (Sync.MultiplayerActive && !Sync.IsServer && !Cutaway.CanApply(grid))
@@ -321,7 +342,33 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            return false;
+            return SingleBlockKeys.Any(key => key != MyKeys.None && input.IsKeyPress(key));
+        }
+
+        private void ConfirmCut(bool includeIntersectingBlocks, string what)
+        {
+            if (!Cfg.CutConfirmation)
+            {
+                OnCutConfirmed(MyGuiScreenMessageBox.ResultEnum.YES, includeIntersectingBlocks);
+                return;
+            }
+
+            // The aim can move on while the dialog is open.
+            var cutGrid = grid;
+            var cutBox = box;
+            var messageBox = MyGuiSandbox.CreateMessageBox(
+                MyMessageBoxStyleEnum.Info,
+                MyMessageBoxButtonsType.YES_NO,
+                new StringBuilder($"Are you sure to CUT the selected {what}?" + ConfigurationHint),
+                new StringBuilder("Confirmation - Box Selector"),
+                callback: result =>
+                {
+                    grid = cutGrid;
+                    box = cutBox;
+                    OnCutConfirmed(result, includeIntersectingBlocks);
+                }
+            );
+            MyGuiSandbox.AddScreen(messageBox);
         }
 
         private bool HandleSelectingSecond(IMyInput input)
@@ -441,27 +488,7 @@ namespace ClientPlugin.Logic
                 var includeIntersectingBlocks = (
                     Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()
                 );
-                if (Cfg.CutConfirmation)
-                {
-                    var messageBox = MyGuiSandbox.CreateMessageBox(
-                        MyMessageBoxStyleEnum.Info,
-                        MyMessageBoxButtonsType.YES_NO,
-                        new StringBuilder(
-                            "Are you sure to CUT the selected blocks?" + ConfigurationHint
-                        ),
-                        new StringBuilder("Confirmation - Box Selector"),
-                        callback: result =>
-                        {
-                            OnCutConfirmed(result, includeIntersectingBlocks);
-                        }
-                    );
-                    MyGuiSandbox.AddScreen(messageBox);
-                }
-                else
-                {
-                    OnCutConfirmed(MyGuiScreenMessageBox.ResultEnum.YES, includeIntersectingBlocks);
-                }
-
+                ConfirmCut(includeIntersectingBlocks, "blocks");
                 return true;
             }
 
@@ -741,6 +768,11 @@ namespace ClientPlugin.Logic
                     );
                     DrawHint("Ctrl+Alt+/: Configure", 4, x: 0f);
                     DrawHint($"{Cfg.RestoreGridCutaway}: Show all blocks on this grid", 5, x: 0f);
+                    DrawHint(
+                        $"{Cfg.CopyAimedBlock}: Copy block    {Cfg.CutAimedBlock}: Cut block",
+                        6,
+                        x: 0f
+                    );
                     break;
 
                 case State.SelectingSecond:

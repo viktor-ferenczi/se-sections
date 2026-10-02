@@ -51,6 +51,8 @@ namespace ClientPlugin
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
         private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
         private Binding clearBlockReferenceData = new Binding(MyKeys.OemMinus);
+        private Binding copyAimedBlock = new Binding(MyKeys.Insert);
+        private Binding cutAimedBlock = new Binding(MyKeys.Delete);
         private Binding hideSelectedBlocks = new Binding(MyKeys.H);
         private Binding showSelectedBlocks = new Binding(MyKeys.H, shift: true);
         private Binding restoreGridCutaway = new Binding(MyKeys.H, alt: true);
@@ -384,6 +386,22 @@ namespace ClientPlugin
         {
             get => deleteSelectedBlocks;
             set => SetField(ref deleteSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Copy the highlighted block before selecting a box")]
+        public Binding CopyAimedBlock
+        {
+            get => copyAimedBlock;
+            set => SetField(ref copyAimedBlock, value);
+        }
+
+        [Keybind(
+            description: "Cut the highlighted block before selecting a box (with confirmation by default)"
+        )]
+        public Binding CutAimedBlock
+        {
+            get => cutAimedBlock;
+            set => SetField(ref cutAimedBlock, value);
         }
 
         [Keybind(description: "Clear block reference data")]

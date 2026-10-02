@@ -40,6 +40,9 @@ build and remove position skips them, so you can work on the visible blocks
 behind them from inside the ship. A hidden block still occupies its cell,
 nothing can be built there until it is removed.
 
+Copy or cut a single block right after activating the selection: aim at it and
+press **Insert** to copy or **Delete** to cut.
+
 ### New in 1.3.5
 
 Edit live ships with temporary cutaways and optional auto-hide around your
@@ -64,6 +67,10 @@ for the selection to work, actually it would just be in the way. I suggest press
 
 ![Selecting the first block](doc/Selecting1.png "Selecting the first block")
 ![Selecting the second block](doc/Selecting2.png "Selecting the second block")
+
+While the first block is highlighted, **Insert** copies just that block and
+**Delete** cuts it, without selecting a box. Cutting asks for confirmation
+unless that is turned off. Both keys can be rebound in the configuration.
 
 The block distance from the character is the same as normal block placement in creative mode.
 You can change the maximum distance of the aimed block by keeping any block at hand while

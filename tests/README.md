@@ -78,3 +78,8 @@ builds and removes a block beyond the sphere with real mouse input while the
 aim ray passes through hidden blocks. The new block must land on the visible
 block's face, and only the visible block may be removed. Start it with auto-hide
 off. It only needs the default bindings.
+
+`test_single_block.py` highlights one block of the fixture with **NumPad 0**,
+copies it with **Insert** and cuts it with **Delete**, then pastes the clipboard
+to check it holds exactly that block. It expects cut confirmation to be on and
+the default bindings.
