@@ -41,10 +41,10 @@ Also verify that Ctrl+Shift+H does not toggle the rendering profiler; plain
 Ctrl+H outside selection should still toggle it.
 
 `test_auto_hide_radius.py` checks the active radius against a cube just beyond
-the configured sphere. Increasing 7.5 m to 7.6 m must remove its collision
+the configured sphere. Increasing 7.5 m to 8.0 m must remove its collision
 without changing the configuration. Disabling/re-enabling must reload the
 default, and editing the default while active must take effect only on the next
-enable. It also checks decreasing by 0.1 m and takes no screenshots.
+enable. It also checks decreasing by 0.5 m and takes no screenshots.
 
 `test_cutaway_lifecycle.py` separately checks **Ctrl+Shift+H** and saves/reloads
 the world while a cutaway and auto-hide are active, then checks restored
@@ -72,3 +72,14 @@ outer boundary, config checkbox/reset behavior, global recovery, successful
 shutdown after moving clear, and forced cleanup on reload. The refusal message
 is captured for visual inspection. Run only in a disposable world: this test
 reloads without saving.
+
+`test_auto_hide_building.py` flies into a row of armor with auto-hide on, then
+builds and removes a block beyond the sphere with real mouse input while the
+aim ray passes through hidden blocks. The new block must land on the visible
+block's face, and only the visible block may be removed. Start it with auto-hide
+off. It only needs the default bindings.
+
+`test_single_block.py` highlights one block of the fixture with **NumPad 0**,
+copies it with **Insert** and cuts it with **Delete**, then pastes the clipboard
+to check it holds exactly that block. It expects cut confirmation to be on and
+the default bindings.

@@ -27,11 +27,23 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 ## Features
 
 - [Demo Video](https://www.youtube.com/watch?v=W0S-wIaIZ80)
+- [Demo Video: Hide selected blocks](https://youtu.be/zJ5F38hHD5Q)
+- [Demo Video: Auto-hide blocks around the character](https://youtu.be/G6Dx3P7Fk_I)
 - [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
 Section editing works in creative mode, or in survival with creative tools
 enabled. Multiplayer section editing runs on the host. Cutaways can also run on
 multiplayer clients under the permissions described below.
+
+### New in 1.4.0
+
+Blocks hidden without collision no longer get in the way of building. The
+build and remove position skips them, so you can work on the visible blocks
+behind them from inside the ship. A hidden block still occupies its cell,
+nothing can be built there until it is removed.
+
+Copy or cut a single block right after activating the selection: aim at it and
+press **Insert** to copy or **Delete** to cut.
 
 ### New in 1.3.5
 
@@ -57,6 +69,10 @@ for the selection to work, actually it would just be in the way. I suggest press
 
 ![Selecting the first block](doc/Selecting1.png "Selecting the first block")
 ![Selecting the second block](doc/Selecting2.png "Selecting the second block")
+
+While the first block is highlighted, **Insert** copies just that block and
+**Delete** cuts it, without selecting a box. Cutting asks for confirmation
+unless that is turned off. Both keys can be rebound in the configuration.
 
 The block distance from the character is the same as normal block placement in creative mode.
 You can change the maximum distance of the aimed block by keeping any block at hand while
@@ -93,7 +109,7 @@ setting for the operation.
 
 ### Cutaways for editing live ships
 
-[![Watch the cutaway and auto-hide demo](https://img.youtube.com/vi/Ek4lqoZFOqE/hqdefault.jpg)](https://youtu.be/Ek4lqoZFOqE)
+[![Watch the hide selected blocks demo](https://img.youtube.com/vi/zJ5F38hHD5Q/hqdefault.jpg)](https://youtu.be/zJ5F38hHD5Q)
 
 Select a box with **NumPad 0** and the two corner clicks, just as for copying or
 cutting a section. Then use:
@@ -130,7 +146,7 @@ hiding changes visuals only, except when the plugin runs on the host of a
 **Friends** session, where collision removal is also enabled. On that host,
 physics changes affect the server simulation; other players still keep their
 normal view. **Hidden block opacity**
-defaults to **50%**; zero makes them invisible. **Hidden block saturation**
+defaults to **25%**; zero makes them invisible. **Hidden block saturation**
 defaults to **50%**; zero makes their displayed color gray. These settings change
 rendering without changing the saved block colors.
 
@@ -159,6 +175,8 @@ offline survival, creative tools or admin rights are required.
 
 ### Auto-hide blocks
 
+[![Watch the auto-hide demo](https://img.youtube.com/vi/G6Dx3P7Fk_I/hqdefault.jpg)](https://youtu.be/G6Dx3P7Fk_I)
+
 **Auto-hide blocks** is off by default. Turn it on in the configuration or with
 **Ctrl + Alt + \**. Blocks whose grid-aligned cube bounds touch a sphere around
 the character become transparent. Collision is removed in single-player and
@@ -166,8 +184,8 @@ on a Friends session's host only. They return to normal as
 you move away. The same grid ownership and creative/admin permissions apply.
 
 The default **Auto-hide radius** is **7.5 m**. Set it from **0 to 50 m**, in
-**0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.1 m;
-**Ctrl + Alt + ]** increases it by 0.1 m. All three shortcuts can be rebound.
+**0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.5 m;
+**Ctrl + Alt + ]** increases it by 0.5 m. All three shortcuts can be rebound.
 The configuration supplies the default radius on each enable. Hotkeys change
 only the active radius while auto-hide is on, without saving it to the config.
 That radius stays in use until auto-hide is turned off; the next enable loads
@@ -175,7 +193,7 @@ the configured default again. Changing the default in the configuration takes
 effect on the next enable.
 
 Toggle confirmations and radius changes appear in the middle of the screen for
-one second. A radius change shows the current value, for example **7.6m**.
+one second. A radius change shows the current value, for example **8.0m**.
 The bracket shortcuts take priority over the game's paint-color controls. The
 game's oxygen debug display may also react to them when that display is enabled.
 
@@ -338,7 +356,7 @@ Auto-hide can be enabled only in a loaded world where hiding is allowed.
 
 **Ctrl-click** a slider to enter an exact value. The radius accepts 0.1 m
 increments; confirmation applies the value and cancellation leaves it unchanged.
-The opacity and saturation defaults are both 50%. Existing saved settings
+The opacity default is 25% and the saturation default is 50%. Existing saved settings
 keep their values.
 
 ![Configuration](doc/ConfigDialog.png "Config Dialog")

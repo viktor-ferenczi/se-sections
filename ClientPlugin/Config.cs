@@ -25,7 +25,7 @@ namespace ClientPlugin
         private bool disablePlacementTest = true;
         private bool restoreToolbars = true;
         private bool includeIntersectingBlocks;
-        private float hiddenBlockOpacity = 50f;
+        private float hiddenBlockOpacity = 25f;
         private float hiddenBlockSaturation = 50f;
         private float autoHideRadius = 7.5f;
         private bool autoHideBlocks;
@@ -51,6 +51,8 @@ namespace ClientPlugin
         private Binding saveSelectedBlocks = new Binding(MyKeys.Enter);
         private Binding deleteSelectedBlocks = new Binding(MyKeys.Back);
         private Binding clearBlockReferenceData = new Binding(MyKeys.OemMinus);
+        private Binding copyAimedBlock = new Binding(MyKeys.Insert);
+        private Binding cutAimedBlock = new Binding(MyKeys.Delete);
         private Binding hideSelectedBlocks = new Binding(MyKeys.H);
         private Binding showSelectedBlocks = new Binding(MyKeys.H, shift: true);
         private Binding restoreGridCutaway = new Binding(MyKeys.H, alt: true);
@@ -226,14 +228,14 @@ namespace ClientPlugin
             set => SetField(ref toggleAutoHide, value);
         }
 
-        [Keybind(description: "Decrease auto-hide radius by 0.1 meter")]
+        [Keybind(description: "Decrease auto-hide radius by 0.5 meter")]
         public Binding DecreaseAutoHideRadius
         {
             get => decreaseAutoHideRadius;
             set => SetField(ref decreaseAutoHideRadius, value);
         }
 
-        [Keybind(description: "Increase auto-hide radius by 0.1 meter")]
+        [Keybind(description: "Increase auto-hide radius by 0.5 meter")]
         public Binding IncreaseAutoHideRadius
         {
             get => increaseAutoHideRadius;
@@ -384,6 +386,22 @@ namespace ClientPlugin
         {
             get => deleteSelectedBlocks;
             set => SetField(ref deleteSelectedBlocks, value);
+        }
+
+        [Keybind(description: "Copy the highlighted block before selecting a box")]
+        public Binding CopyAimedBlock
+        {
+            get => copyAimedBlock;
+            set => SetField(ref copyAimedBlock, value);
+        }
+
+        [Keybind(
+            description: "Cut the highlighted block before selecting a box (with confirmation by default)"
+        )]
+        public Binding CutAimedBlock
+        {
+            get => cutAimedBlock;
+            set => SetField(ref cutAimedBlock, value);
         }
 
         [Keybind(description: "Clear block reference data")]
