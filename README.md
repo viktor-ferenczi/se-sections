@@ -137,7 +137,7 @@ hiding changes visuals only, except when the plugin runs on the host of a
 **Friends** session, where collision removal is also enabled. On that host,
 physics changes affect the server simulation; other players still keep their
 normal view. **Hidden block opacity**
-defaults to **50%**; zero makes them invisible. **Hidden block saturation**
+defaults to **25%**; zero makes them invisible. **Hidden block saturation**
 defaults to **50%**; zero makes their displayed color gray. These settings change
 rendering without changing the saved block colors.
 
@@ -345,7 +345,7 @@ Auto-hide can be enabled only in a loaded world where hiding is allowed.
 
 **Ctrl-click** a slider to enter an exact value. The radius accepts 0.1 m
 increments; confirmation applies the value and cancellation leaves it unchanged.
-The opacity and saturation defaults are both 50%. Existing saved settings
+The opacity default is 25% and the saturation default is 50%. Existing saved settings
 keep their values.
 
 ![Configuration](doc/ConfigDialog.png "Config Dialog")
