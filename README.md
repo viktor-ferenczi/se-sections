@@ -33,6 +33,13 @@ Section editing works in creative mode, or in survival with creative tools
 enabled. Multiplayer section editing runs on the host. Cutaways can also run on
 multiplayer clients under the permissions described below.
 
+### New in 1.4.0
+
+Blocks hidden without collision no longer get in the way of building. The
+build and remove position skips them, so you can work on the visible blocks
+behind them from inside the ship. A hidden block still occupies its cell,
+nothing can be built there until it is removed.
+
 ### New in 1.3.5
 
 Edit live ships with temporary cutaways and optional auto-hide around your

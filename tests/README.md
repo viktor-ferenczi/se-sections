@@ -72,3 +72,9 @@ outer boundary, config checkbox/reset behavior, global recovery, successful
 shutdown after moving clear, and forced cleanup on reload. The refusal message
 is captured for visual inspection. Run only in a disposable world: this test
 reloads without saving.
+
+`test_auto_hide_building.py` flies into a row of armor with auto-hide on, then
+builds and removes a block beyond the sphere with real mouse input while the
+aim ray passes through hidden blocks. The new block must land on the visible
+block's face, and only the visible block may be removed. Start it with auto-hide
+off. It only needs the default bindings.
