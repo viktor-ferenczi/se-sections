@@ -47,7 +47,7 @@ def main():
         t.press(api, "OemCloseBrackets", ["LeftControl", "LeftAlt"])
         assert not api.get_character_target(20)[
             "hit"
-        ], "7.6 m radius did not hide the block"
+        ], "8.0 m radius did not hide the block"
         settings.open_settings(api)
         assert (
             float(settings.row(api, "Auto-hide radius (m)")[2]["properties"]["text"])
@@ -70,7 +70,7 @@ def main():
         t.press(api, "OemOpenBrackets", ["LeftControl", "LeftAlt"])
         assert api.get_character_target(20)["hit"]
         print(
-            "PASS disabling/re-enabling resets the radius and decrease uses 0.1 m steps"
+            "PASS disabling/re-enabling resets the radius and decrease uses 0.5 m steps"
         )
         settings.open_settings(api)
         settings.set_radius(api, 8)

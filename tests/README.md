@@ -41,10 +41,10 @@ Also verify that Ctrl+Shift+H does not toggle the rendering profiler; plain
 Ctrl+H outside selection should still toggle it.
 
 `test_auto_hide_radius.py` checks the active radius against a cube just beyond
-the configured sphere. Increasing 7.5 m to 7.6 m must remove its collision
+the configured sphere. Increasing 7.5 m to 8.0 m must remove its collision
 without changing the configuration. Disabling/re-enabling must reload the
 default, and editing the default while active must take effect only on the next
-enable. It also checks decreasing by 0.1 m and takes no screenshots.
+enable. It also checks decreasing by 0.5 m and takes no screenshots.
 
 `test_cutaway_lifecycle.py` separately checks **Ctrl+Shift+H** and saves/reloads
 the world while a cutaway and auto-hide are active, then checks restored

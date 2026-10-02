@@ -193,7 +193,7 @@ namespace ClientPlugin.Logic
             )
             {
                 Cutaway.AdjustAutoHideRadius(
-                    Cfg.IncreaseAutoHideRadius.HasPressed(input) ? 0.1f : -0.1f
+                    Cfg.IncreaseAutoHideRadius.HasPressed(input) ? 0.5f : -0.5f
                 );
                 return true;
             }

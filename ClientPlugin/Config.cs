@@ -226,14 +226,14 @@ namespace ClientPlugin
             set => SetField(ref toggleAutoHide, value);
         }
 
-        [Keybind(description: "Decrease auto-hide radius by 0.1 meter")]
+        [Keybind(description: "Decrease auto-hide radius by 0.5 meter")]
         public Binding DecreaseAutoHideRadius
         {
             get => decreaseAutoHideRadius;
             set => SetField(ref decreaseAutoHideRadius, value);
         }
 
-        [Keybind(description: "Increase auto-hide radius by 0.1 meter")]
+        [Keybind(description: "Increase auto-hide radius by 0.5 meter")]
         public Binding IncreaseAutoHideRadius
         {
             get => increaseAutoHideRadius;

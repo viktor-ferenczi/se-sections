@@ -173,8 +173,8 @@ on a Friends session's host only. They return to normal as
 you move away. The same grid ownership and creative/admin permissions apply.
 
 The default **Auto-hide radius** is **7.5 m**. Set it from **0 to 50 m**, in
-**0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.1 m;
-**Ctrl + Alt + ]** increases it by 0.1 m. All three shortcuts can be rebound.
+**0.1 m** steps, in the configuration. **Ctrl + Alt + [** decreases it by 0.5 m;
+**Ctrl + Alt + ]** increases it by 0.5 m. All three shortcuts can be rebound.
 The configuration supplies the default radius on each enable. Hotkeys change
 only the active radius while auto-hide is on, without saving it to the config.
 That radius stays in use until auto-hide is turned off; the next enable loads
@@ -182,7 +182,7 @@ the configured default again. Changing the default in the configuration takes
 effect on the next enable.
 
 Toggle confirmations and radius changes appear in the middle of the screen for
-one second. A radius change shows the current value, for example **7.6m**.
+one second. A radius change shows the current value, for example **8.0m**.
 The bracket shortcuts take priority over the game's paint-color controls. The
 game's oxygen debug display may also react to them when that display is enabled.
 
