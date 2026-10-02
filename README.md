@@ -27,6 +27,8 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 ## Features
 
 - [Demo Video](https://www.youtube.com/watch?v=W0S-wIaIZ80)
+- [Demo Video: Hide selected blocks](https://youtu.be/zJ5F38hHD5Q)
+- [Demo Video: Auto-hide blocks around the character](https://youtu.be/G6Dx3P7Fk_I)
 - [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
 Section editing works in creative mode, or in survival with creative tools
@@ -107,7 +109,7 @@ setting for the operation.
 
 ### Cutaways for editing live ships
 
-[![Watch the cutaway and auto-hide demo](https://img.youtube.com/vi/Ek4lqoZFOqE/hqdefault.jpg)](https://youtu.be/Ek4lqoZFOqE)
+[![Watch the hide selected blocks demo](https://img.youtube.com/vi/zJ5F38hHD5Q/hqdefault.jpg)](https://youtu.be/zJ5F38hHD5Q)
 
 Select a box with **NumPad 0** and the two corner clicks, just as for copying or
 cutting a section. Then use:
@@ -172,6 +174,8 @@ Each client keeps its own mask, so other players keep their normal view. In
 offline survival, creative tools or admin rights are required.
 
 ### Auto-hide blocks
+
+[![Watch the auto-hide demo](https://img.youtube.com/vi/G6Dx3P7Fk_I/hqdefault.jpg)](https://youtu.be/G6Dx3P7Fk_I)
 
 **Auto-hide blocks** is off by default. Turn it on in the configuration or with
 **Ctrl + Alt + \**. Blocks whose grid-aligned cube bounds touch a sphere around
