@@ -375,6 +375,14 @@ keep their values.
 Should you have any issues using this plugin, then please either submit a ticket here
 on GitHub or report the issue in the `#bug-reports` channel of the [SE Mods Discord](https://discord.gg/PYPFPGf3Ca).
 
+## Development
+
+Load the working copy through a Pulsar development folder: start Pulsar with `-sources`,
+then add this repository with the Sources button. Building `Sections.sln` deploys the
+plugin into Pulsar's `Local` folder only if `Pulsar` is set in `Directory.Build.props.user`
+or passed as `-p:Pulsar=...`. If the build cannot find the game, run `setup.py` to write its
+folder into `Directory.Build.props.user`.
+
 ## Legal
 
 Space Engineers and Space Engineers 2 are trademarks of Keen Software House s.r.o.
