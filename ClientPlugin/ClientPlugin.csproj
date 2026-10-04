@@ -1,541 +1,311 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F3D98A44-09C3-47AF-8524-D49D6B3BFB90}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ClientPlugin</RootNamespace>
     <AssemblyName>Sections</AssemblyName>
-    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
     <LangVersion>13</LangVersion>
+      
+    <!-- Target platforms on Windows and Linux -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net48;net10.0</TargetFrameworks>
+    <TargetFramework Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFramework>
+      
+    <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+    <!-- Default configuration if none supplied -->
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+
+    <!-- Keep original behaviour for post/pre build events -->
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <OutputPath>bin/Debug/</OutputPath>
+    <DefineConstants>DEBUG;TRACE;PULSAR;LOCAL_BUILD</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>bin/Release/</OutputPath>
+    <DefineConstants>TRACE;PULSAR;LOCAL_BUILD</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="DirectShowLib, Version=2.1.0.1599, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\DirectShowLib.dll</HintPath>
+      <HintPath>$(Bin64Dir)DirectShowLib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="EmptyKeys.UserInterface, Version=3.2.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\EmptyKeys.UserInterface.dll</HintPath>
+      <HintPath>$(Bin64Dir)EmptyKeys.UserInterface.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="EmptyKeys.UserInterface.Core, Version=3.2.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\EmptyKeys.UserInterface.Core.dll</HintPath>
+      <HintPath>$(Bin64Dir)EmptyKeys.UserInterface.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="EOSSDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\EOSSDK.dll</HintPath>
+      <HintPath>$(Bin64Dir)EOSSDK.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="HavokWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\HavokWrapper.dll</HintPath>
+      <HintPath>$(Bin64Dir)HavokWrapper.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis, Version=2.9.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <HintPath>..\Bin64\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>$(Bin64Dir)Microsoft.CodeAnalysis.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=2.9.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <HintPath>..\Bin64\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Win32.Primitives, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\Microsoft.Win32.Primitives.dll</HintPath>
+      <HintPath>$(Bin64Dir)Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\Bin64\netstandard.dll</HintPath>
+      <HintPath>$(Bin64Dir)netstandard.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ProtoBuf.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\ProtoBuf.Net.dll</HintPath>
+      <HintPath>$(Bin64Dir)ProtoBuf.Net.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ProtoBuf.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\ProtoBuf.Net.Core.dll</HintPath>
+      <HintPath>$(Bin64Dir)ProtoBuf.Net.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="RecastDetourWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\RecastDetourWrapper.dll</HintPath>
+      <HintPath>$(Bin64Dir)RecastDetourWrapper.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="RestSharp, Version=106.6.10.0, Culture=neutral, PublicKeyToken=598062e77f915f75">
-      <HintPath>..\Bin64\RestSharp.dll</HintPath>
+    <Reference Include="RestSharp, Version=112.1.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75">
+      <HintPath>$(Bin64Dir)RestSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sandbox.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\Sandbox.Common.dll</HintPath>
+      <HintPath>$(Bin64Dir)Sandbox.Common.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sandbox.Game, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\Sandbox.Game.dll</HintPath>
+      <HintPath>$(Bin64Dir)Sandbox.Game.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sandbox.Game.XmlSerializers, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\Sandbox.Game.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)Sandbox.Game.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sandbox.Graphics, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\Sandbox.Graphics.dll</HintPath>
+      <HintPath>$(Bin64Dir)Sandbox.Graphics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sandbox.RenderDirect, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\Sandbox.RenderDirect.dll</HintPath>
+      <HintPath>$(Bin64Dir)Sandbox.RenderDirect.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SixLabors.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\SixLabors.Core.dll</HintPath>
+      <HintPath>$(Bin64Dir)SixLabors.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SixLabors.ImageSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\SixLabors.ImageSharp.dll</HintPath>
+      <HintPath>$(Bin64Dir)SixLabors.ImageSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SpaceEngineers.Game, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\SpaceEngineers.Game.dll</HintPath>
+      <HintPath>$(Bin64Dir)SpaceEngineers.Game.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SpaceEngineers.ObjectBuilders, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\SpaceEngineers.ObjectBuilders.dll</HintPath>
+      <HintPath>$(Bin64Dir)SpaceEngineers.ObjectBuilders.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SpaceEngineers.ObjectBuilders.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.AppContext, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.AppContext.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\Bin64\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Collections.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.Concurrent, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Collections.Concurrent.dll</HintPath>
+    <Reference Include="Steamworks.NET, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(Bin64Dir)Steamworks.NET.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Collections.Immutable.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.NonGeneric, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Collections.NonGeneric.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.Specialized, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Collections.Specialized.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ComponentModel.dll</HintPath>
+      <HintPath>$(Bin64Dir)System.Collections.Immutable.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.ComponentModel.Annotations, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ComponentModel.Annotations.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.EventBasedAsync, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ComponentModel.EventBasedAsync.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ComponentModel.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.TypeConverter, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ComponentModel.TypeConverter.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Console, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Console.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.Common, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Data.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.Contracts, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.Contracts.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.Debug, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.Debug.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.FileVersionInfo, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.FileVersionInfo.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.Process, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.Process.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.StackTrace, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.StackTrace.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.TextWriterTraceListener, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.TextWriterTraceListener.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.Tools, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.Tools.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.TraceSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.TraceSource.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.Tracing, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Diagnostics.Tracing.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing.Primitives, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Drawing.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Dynamic.Runtime, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Dynamic.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Globalization, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Globalization.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Globalization.Calendars, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Globalization.Calendars.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Globalization.Extensions, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Globalization.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-      <HintPath>..\Bin64\System.IO.Compression.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression.ZipFile, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-      <HintPath>..\Bin64\System.IO.Compression.ZipFile.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.FileSystem, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.FileSystem.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.FileSystem.DriveInfo, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.FileSystem.DriveInfo.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.FileSystem.Primitives, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.FileSystem.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.FileSystem.Watcher, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.FileSystem.Watcher.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.IsolatedStorage, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.IsolatedStorage.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.MemoryMappedFiles, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.MemoryMappedFiles.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Pipes, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.Pipes.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.UnmanagedMemoryStream, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.IO.UnmanagedMemoryStream.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Linq, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Linq.Expressions, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Linq.Expressions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Linq.Parallel, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Linq.Parallel.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Linq.Queryable, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Linq.Queryable.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\Bin64\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Http.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.NameResolution, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.NameResolution.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.NetworkInformation, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.NetworkInformation.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Ping, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Ping.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Primitives, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Requests, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Requests.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Security, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Sockets, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.Sockets.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.WebHeaderCollection, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.WebHeaderCollection.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.WebSockets, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.WebSockets.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.WebSockets.Client, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Net.WebSockets.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics.Vectors, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ObjectModel, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.ObjectModel.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reflection, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Reflection.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reflection.Extensions, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Reflection.Extensions.dll</HintPath>
+      <HintPath>$(Bin64Dir)System.ComponentModel.Annotations.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Metadata, Version=1.4.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Reflection.Metadata.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reflection.Primitives, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Reflection.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Resources.Reader, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Resources.Reader.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Resources.ResourceManager, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Resources.ResourceManager.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Resources.Writer, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Resources.Writer.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.VisualC, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.CompilerServices.VisualC.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Handles, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Handles.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.InteropServices.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Numerics, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Numerics.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization.Formatters, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Serialization.Formatters.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization.Json, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Serialization.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization.Primitives, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Serialization.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization.Xml, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Runtime.Serialization.Xml.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Claims, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Claims.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Algorithms, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Cryptography.Algorithms.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Csp, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Cryptography.Csp.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Encoding, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Cryptography.Encoding.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Primitives, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Cryptography.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Cryptography.X509Certificates.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.Principal, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.Principal.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security.SecureString, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Security.SecureString.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.Encoding, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Text.Encoding.dll</HintPath>
+      <HintPath>$(Bin64Dir)System.Reflection.Metadata.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Text.Encoding.CodePages, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Text.Encoding.CodePages.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.Encoding.Extensions, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Text.Encoding.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.RegularExpressions, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Text.RegularExpressions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Overlapped, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.Overlapped.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.Tasks.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.1.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\Bin64\System.Threading.Tasks.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Parallel, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.Tasks.Parallel.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Thread, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.Thread.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.ThreadPool, Version=4.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.ThreadPool.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Timer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Threading.Timer.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\Bin64\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.ReaderWriter, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.ReaderWriter.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Serialization" />
-    <Reference Include="System.Xml.XDocument, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.XDocument.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.XmlDocument, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.XmlDocument.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.XmlSerializer, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.XmlSerializer.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.XPath, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.XPath.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.XPath.XDocument, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\Bin64\System.Xml.XPath.XDocument.dll</HintPath>
+      <HintPath>$(Bin64Dir)System.Text.Encoding.CodePages.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Ansel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Ansel.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Ansel.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Audio, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Audio.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Audio.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.EOS, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.EOS.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.EOS.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.EOS.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.EOS.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.EOS.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Game, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Game.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Game.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Game.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Game.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Game.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Input, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Input.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Input.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Library.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Library.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Math, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Math.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Math.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Math.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Math.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Math.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Mod.Io, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Mod.Io.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Mod.Io.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.NativeWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.NativeWrapper.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.NativeWrapper.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Network, Version=1.0.53.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Network.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Network.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Platform.Windows, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Platform.Windows.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Platform.Windows.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Render, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Render.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Render.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Render11, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Render11.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Render11.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Scripting.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Scripting.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.Steam.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.Steam.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.UserInterface, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.UserInterface.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.UserInterface.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VRage.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\Bin64\VRage.XmlSerializers.dll</HintPath>
+      <HintPath>$(Bin64Dir)VRage.XmlSerializers.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gui\NameDialog.cs" />
-    <Compile Include="Logic\References.cs" />
-    <Compile Include="Logic\ModStorage.cs" />
-    <Compile Include="Logic\Constants.cs" />
-    <Compile Include="Logic\Extensions.cs" />
-    <Compile Include="Logic\Logic.cs" />
-    <Compile Include="Logic\Cutaway.cs" />
-    <Compile Include="Logic\CutawayPhysics.cs" />
-    <Compile Include="Patches\CutawayCollisionPatch.cs" />
-    <Compile Include="Patches\CutawayTargetingPatch.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="Logic\MechanicalConnection.cs" />
-    <Compile Include="Logic\MechanicalConnections.cs" />
-    <Compile Include="Logic\DataStorage.cs" />
-    <Compile Include="Logic\Reference.cs" />
-    <Compile Include="Patches\MyBlueprintUtilsPatch.cs" />
-    <Compile Include="Patches\MyCubeBuilderPatch.cs" />
-    <Compile Include="Patches\SelectionInputPatch.cs" />
-    <Compile Include="Patches\MyCubeGridPatch.cs" />
-    <Compile Include="Patches\MyGridClipboardPatch.cs" />
-    <Compile Include="Patches\MyTerminalBlockPatch.cs" />
-    <Compile Include="Patches\PasteGridDataPatch.cs" />
-    <Compile Include="Plugin.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Settings\ConfigStorage.cs" />
-    <Compile Include="Settings\Elements\Button.cs" />
-    <Compile Include="Settings\Elements\Checkbox.cs" />
-    <Compile Include="Settings\Elements\Color.cs" />
-    <Compile Include="Settings\Elements\Control.cs" />
-    <Compile Include="Settings\Elements\Dropdown.cs" />
-    <Compile Include="Settings\Elements\Element.cs" />
-    <Compile Include="Settings\Elements\Keybind.cs" />
-    <Compile Include="Settings\Elements\Separator.cs" />
-    <Compile Include="Settings\Elements\Slider.cs" />
-    <Compile Include="Settings\Elements\Textbox.cs" />
-    <Compile Include="Settings\Layouts\Layout.cs" />
-    <Compile Include="Settings\Layouts\None.cs" />
-    <Compile Include="Settings\Layouts\Simple.cs" />
-    <Compile Include="Settings\SettingsGenerator.cs" />
-    <Compile Include="Settings\SettingsScreen.cs" />
-    <Compile Include="Settings\Tools\Binding.cs" />
-    <Compile Include="Settings\Tools\Tools.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="deploy.bat" />
-    <Content Include="PluginHub.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <!-- Uncomment to enable publicizer support  
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    -->
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <!-- Uncomment to enable publicizer support
   <PropertyGroup>
-    <PostBuildEvent>call "$(ProjectDir)\deploy.bat" "$(TargetPath)" "$(SolutionName)"</PostBuildEvent>
+    <PublicizerClearCacheOnClean>true</PublicizerClearCacheOnClean>
+    <PublicizerRuntimeStrategies>Unsafe;IgnoresAccessChecksTo</PublicizerRuntimeStrategies>
+    <PublicizerLogFilePath>$(MSBuildProjectDirectory)\Krafs.Publicizer.$(TargetFramework).log</PublicizerLogFilePath>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <Publicize Include="Sandbox.Game"/>
+    <Publicize Include="SpaceEngineers.Game"/>
+    <DoNotPublicize Include="Sandbox.Game:Sandbox.Game.Entities.MyEntities.OnEntityAdd"/>
+    <DoNotPublicize Include="Sandbox.Game:Sandbox.Game.Entities.MyEntities.OnEntityRemove"/>
+    <DoNotPublicize Include="Sandbox.Game:Sandbox.Game.Entities.MyCubeGrid.OnStaticChanged"/>
+  </ItemGroup>  
+  -->
+  <Target Name="ValidateProps" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Bin64)' == ''"
+           Text="Could not locate the Space Engineers Bin64 folder. Set &lt;Bin64&gt; in &quot;$(RepoRoot)Directory.Build.props.user&quot;." />
+    <Error Condition="!Exists('$(Bin64)')"
+           Text="Invalid Bin64 path &quot;$(Bin64)&quot; in &quot;$(RepoRoot)Directory.Build.props[.user]&quot;." />
+    <Message Condition="'$(Pulsar)' == ''"
+             Text="Pulsar is not set, the plugin will not be deployed." />
+    <Warning Condition="'$(Pulsar)' != '' And !Exists('$(Pulsar)')"
+             Text="Pulsar folder &quot;$(Pulsar)&quot; does not exist, the plugin will not be deployed." />
+  </Target>
+
+  <!-- Copies the build output into Pulsar's Local plugin folder, but only if the Pulsar
+       property is set (see Directory.Build.props):
+         net4x (.NET Framework) -> Pulsar/Legacy/Local/$(AssemblyName)
+         net5+ (.NET)           -> Pulsar/Interim/Local/$(AssemblyName)
+       Each build lands in its own subfolder as plugin.dll next to the plugin.xml
+       metadata, so Pulsar picks up the friendly name and the runtime restrictions.
+       (Pulsar/Modern belongs to Space Engineers 2 and is never a target here.) -->
+  <Target Name="DeployPlugin" AfterTargets="Build"
+          Condition="'$(RunPostBuildEvent)' != 'Never' And '$(TargetFramework)' != '' And Exists('$(Pulsar)')">
+    <PropertyGroup>
+      <PulsarEdition Condition="$(TargetFramework.StartsWith('net4'))">Legacy</PulsarEdition>
+      <PulsarEdition Condition="'$(PulsarEdition)' == '' And Exists('$(Pulsar)$(PathSeparator)Interim')">Interim</PulsarEdition>
+      <!-- Without its own data folder the Interim launcher falls back to the Legacy one.
+           Deploy there only if no .NET Framework build is claiming the same folder. -->
+      <PulsarEdition Condition="'$(PulsarEdition)' == '' And '$(TargetFrameworks)' == ''">Legacy</PulsarEdition>
+
+      <PulsarEditionDir Condition="'$(PulsarEdition)' != ''">$(Pulsar)$(PathSeparator)$(PulsarEdition)</PulsarEditionDir>
+      <PulsarEdition Condition="'$(PulsarEditionDir)' != '' And !Exists('$(PulsarEditionDir)')"></PulsarEdition>
+
+      <PluginDirectory Condition="'$(PulsarEdition)' != ''">$(PulsarEditionDir)$(PathSeparator)Local$(PathSeparator)$(AssemblyName)</PluginDirectory>
+      <PluginDataFile>$(RepoRoot)$(AssemblyName).xml</PluginDataFile>
+    </PropertyGroup>
+
+    <Warning Condition="'$(PluginDirectory)' == ''"
+             Text="No Pulsar plugin folder for the $(TargetFramework) build under &quot;$(Pulsar)&quot;, skipping its deployment." />
+
+    <MakeDir Condition="'$(PluginDirectory)' != ''" Directories="$(PluginDirectory)" />
+    <Copy Condition="'$(PluginDirectory)' != ''"
+          SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDirectory)$(PathSeparator)plugin.dll" />
+    <Copy Condition="'$(PluginDirectory)' != '' And Exists('$(TargetDir)$(TargetName).pdb')"
+          SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFiles="$(PluginDirectory)$(PathSeparator)plugin.pdb" />
+    <Copy Condition="'$(PluginDirectory)' != '' And Exists('$(PluginDataFile)')"
+          SourceFiles="$(PluginDataFile)" DestinationFiles="$(PluginDirectory)$(PathSeparator)plugin.xml" />
+    <Message Condition="'$(PluginDirectory)' != ''" Importance="high"
+             Text="Deployed the $(TargetFramework) build to &quot;$(PluginDirectory)&quot;" />
+  </Target>
 </Project>
