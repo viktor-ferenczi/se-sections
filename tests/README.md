@@ -98,7 +98,15 @@ SECTIONS_SLOT=11 uv run python tests/rig.py stop
 `rig.py start` takes `Key=Value` arguments for `Sections.cfg`, for example
 `CutConfirmation=true` for `test_single_block.py`. By default it turns cut and
 delete confirmation off, sets opacity to 10% and saturation to 100%, and keeps
-the default key bindings.
+the default key bindings. `--earth` loads the Remote suite's Earth world,
+which these scripts expect; their `aim` assumes an upright character.
+
+On 2026-10-09 (Linux, a fresh slot client per script) all scripts passed
+except three. `test_cutaway.py` fails at the hidden battery step and
+`test_auto_hide_safety.py` at its last reload, both as described in
+`se1/notes/sections-cutaway/NOTE.md`. `test_auto_hide.py` fails at its final
+aim when the client is fresh and its character starts rolled. It passed when
+it ran after other scripts on the same client.
 
 Run `test_cutaway.py` against a disposable creative world with the Remote and
 Sections plugins enabled. Keep rendering enabled: the test uses real keyboard

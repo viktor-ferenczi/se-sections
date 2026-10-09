@@ -179,9 +179,8 @@ class Game:
         time.sleep(0.5)
 
     def world(self, cell, grid: int | None = None) -> list[float]:
-        return self.api.call([CallOp.grid_to_world(grid or self.grid, cell)]).call(0)[
-            "world"
-        ]
+        world = self.api.call([CallOp.grid_to_world(grid or self.grid, cell)]).call(0)
+        return [float(c) for c in world["world"]]
 
     def exists(self, cell, grid: int | None = None) -> bool:
         return self.api.call([CallOp.cube_exists(grid or self.grid, cell)]).call(0)[
@@ -192,7 +191,8 @@ class Game:
         # A flying character keeps whatever roll it has, so place the feet below
         # the head along its own up vector. Turning changes that vector; repeat.
         for _ in range(3):
-            up = self.api.get_character()["up"]
+            # float(): Remote sends small doubles as strings, se1/tickets/SE1-0109.md
+            up = [float(u) for u in self.api.get_character()["up"]]
             self.api.character_teleport(*(e - 1.6 * u for e, u in zip(eye, up)))
             time.sleep(0.3)
             self.api.character_look_at(*target, tolerance=0.5)
