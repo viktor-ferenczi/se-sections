@@ -1,0 +1,453 @@
+"""Shared steps of the block reference and rebuild tests.
+
+The fixture is a ship whose blocks refer to each other in every way Sections
+backs up: toolbars, the remote control's camera, the event controller's
+selection, the turret controller's rotors, camera and tools. The tests drive
+Sections with real input and read the outcome from the saved world, the only
+place the game exposes toolbars, block references and mod storage.
+"""
+
+from __future__ import annotations
+
+import itertools
+import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import rig  # noqa: F401 -- puts the Remote client on the path
+from se_remote import CallOp, RemoteAPI
+
+XSI = "{http://www.w3.org/2001/XMLSchema-instance}type"
+# Mod storage key of the Sections block reference data (ClientPlugin/Logic/ModStorage.cs)
+STORAGE_KEY = "cd844fa4-4ac0-4d9c-8a01-73416b225772"
+CENTER = (640, 360)
+# Fixture places on a 100 m raster, unique across runs in the same world. Not
+# much farther out: single precision positions make the aim ray start inside
+# the character beyond about a million metres.
+_places = itertools.count(int(time.time()) % 10000)
+
+# Owners on top of the floor at y 1, targets after a gap. Each owner refers to
+# targets only, so cutting either row leaves dangling references behind.
+OWNERS = {
+    "Timer": ((0, 1, 0), "TimerBlock", "TimerBlockLarge"),
+    "Cockpit": ((1, 1, 0), "Cockpit", "LargeBlockCockpit"),
+    "Sensor": ((2, 1, 0), "SensorBlock", "LargeBlockSensor"),
+    "Buttons": ((3, 1, 0), "ButtonPanel", "ButtonPanelLarge"),
+    "Event": ((4, 1, 0), "EventControllerBlock", "EventControllerLarge"),
+    "Remote": ((5, 1, 0), "RemoteControl", "LargeBlockRemoteControl"),
+    "Turret": ((6, 1, 0), "TurretControlBlock", "LargeTurretControlBlock"),
+    "Defensive": ((7, 1, 0), "DefensiveCombatBlock", "LargeDefensiveCombat"),
+    "Flight": ((8, 1, 0), "FlightMovementBlock", "LargeFlightMovement"),
+    "Offensive": ((9, 1, 0), "OffensiveCombatBlock", "LargeOffensiveCombat"),
+}
+TARGETS = {
+    "Battery A": ((11, 1, 0), "BatteryBlock", "LargeBlockBatteryBlock"),
+    "Camera": ((12, 1, 0), "CameraBlock", "LargeCameraBlock"),
+    "Azimuth": ((13, 1, 0), "MotorStator", "LargeStator"),
+    "Elevation": ((14, 1, 0), "MotorStator", "LargeStator"),
+    "Battery B": ((15, 1, 0), "BatteryBlock", "LargeBlockBatteryBlock"),
+}
+# The floor row behind, at z -1, is free room for pasting duplicates
+FLOOR = [(x, 0, z) for x in range(16) for z in (0, -1)]
+OWNER_ROW = ((9, 1, 0), (0, 1, 0))
+TARGET_ROW = ((11, 1, 0), (15, 1, 0))
+IDS = {name: 900000000000101 + i for i, name in enumerate([*OWNERS, *TARGETS])}
+
+# What every owner refers to, by block name: toolbar slots, camera, selection,
+# rotors and tools, as `references` reads them back
+EXPECTED = {
+    "Timer": {"slot 0": "Battery A"},
+    "Cockpit": {"slot 0": "Battery A", "slot 1": "Battery B", "slot 2": "Camera"},
+    "Sensor": {"slot 0": "Battery B"},
+    "Buttons": {"slot 0": "Battery A"},
+    "Event": {"slot 0": "Battery B", "selected": ["Battery A", "Battery B"]},
+    "Remote": {"camera": "Camera"},
+    "Turret": {
+        "slot 0": "Battery B",
+        "azimuth": "Azimuth",
+        "elevation": "Elevation",
+        "camera": "Camera",
+        "tools": ["Battery A", "Battery B"],
+    },
+    "Defensive": {"slot 0": "Battery A"},
+    # The game does not save this block's toolbar
+    "Flight": {},
+    "Offensive": {"slot 0": "Battery A"},
+}
+
+
+def _slot(index: int, target: str, action: str = "OnOff") -> str:
+    return (
+        f"<Slot><Index>{index}</Index><Item />"
+        '<Data xsi:type="MyObjectBuilder_ToolbarItemTerminalBlock">'
+        f"<Action>{action}</Action><BlockEntityId>{IDS[target]}</BlockEntityId></Data></Slot>"
+    )
+
+
+def _toolbar(kind: str, *slots: str) -> str:
+    return f'<Toolbar><ToolbarType>{kind}</ToolbarType><SelectedSlot xsi:nil="true" /><Slots>{"".join(slots)}</Slots></Toolbar>'
+
+
+EXTRA = {
+    "Timer": _toolbar("Character", _slot(0, "Battery A")) + "<Delay>3000</Delay>",
+    "Cockpit": _toolbar(
+        "Ship", _slot(0, "Battery A"), _slot(1, "Battery B"), _slot(2, "Camera", "View")
+    ),
+    "Sensor": _toolbar("Character", _slot(0, "Battery B"))
+    + "<DetectPlayers>false</DetectPlayers>",
+    "Buttons": _toolbar("Character", _slot(0, "Battery A"))
+    + "<AnyoneCanUse>true</AnyoneCanUse><CustomButtonNames><dictionary>"
+    "<item><Key>0</Key><Value>Lamp</Value></item></dictionary></CustomButtonNames>",
+    "Event": _toolbar("Character", _slot(0, "Battery B"))
+    + f"<SelectedBlocks><long>{IDS['Battery A']}</long><long>{IDS['Battery B']}</long></SelectedBlocks>",
+    "Remote": f"<BindedCamera>{IDS['Camera']}</BindedCamera>",
+    # The game's remap of a pasted turret controller fails without a toolbar.
+    # Sections backs up its rotors, camera and tools, not its toolbar.
+    "Turret": _toolbar("Character", _slot(0, "Battery B"))
+    + f"<AzimuthId>{IDS['Azimuth']}</AzimuthId><ElevationId>{IDS['Elevation']}</ElevationId>"
+    f"<CameraId>{IDS['Camera']}</CameraId>"
+    f"<ToolIds><long>{IDS['Battery A']}</long><long>{IDS['Battery B']}</long></ToolIds>",
+    "Defensive": _toolbar("Character", _slot(0, "Battery A")),
+    "Offensive": _toolbar("Character", _slot(0, "Battery A")),
+    "Battery A": "<CurrentStoredPower>3</CurrentStoredPower><ProducerEnabled>true</ProducerEnabled>",
+    "Battery B": "<CurrentStoredPower>3</CurrentStoredPower><ProducerEnabled>true</ProducerEnabled>",
+}
+
+
+# Mounted with their backs on the floor; a block that is not mounted splits off
+# at the first removal
+FACING_UP = {"Sensor", "Camera"}
+
+
+def _block(
+    kind: str, subtype: str, pos, extra: str = "", entity_id: int = 0, up: bool = False
+) -> str:
+    entity = f"<EntityId>{entity_id}</EntityId>" if entity_id else ""
+    x, y, z = pos
+    return (
+        f'<MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_{kind}">'
+        f'<SubtypeName>{subtype}</SubtypeName>{entity}<Min x="{x}" y="{y}" z="{z}" />'
+        + (
+            '<BlockOrientation Forward="Up" Up="Backward" />'
+            if up
+            else '<BlockOrientation Forward="Forward" Up="Up" />'
+        )
+        + f'<ColorMaskHSV x="0.55" y="0.4" z="0.2" />{extra}</MyObjectBuilder_CubeBlock>'
+    )
+
+
+def blueprint(name: str) -> str:
+    blocks = [_block("CubeBlock", "LargeBlockArmorBlock", p) for p in FLOOR]
+    for block, (pos, kind, subtype) in {**OWNERS, **TARGETS}.items():
+        extra = f"<CustomName>{block}</CustomName>" + EXTRA.get(block, "")
+        blocks.append(_block(kind, subtype, pos, extra, IDS[block], block in FACING_UP))
+    return (
+        '<?xml version="1.0"?><Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        '<ShipBlueprints><ShipBlueprint xsi:type="MyObjectBuilder_ShipBlueprintDefinition">'
+        f'<Id Type="MyObjectBuilder_ShipBlueprintDefinition" Subtype="{name}" />'
+        "<CubeGrids><CubeGrid><GridSizeEnum>Large</GridSizeEnum><IsStatic>false</IsStatic>"
+        '<PositionAndOrientation><Position x="0" y="0" z="0" />'
+        '<Forward x="0" y="0" z="-1" /><Up x="0" y="1" z="0" /></PositionAndOrientation>'
+        f"<CubeBlocks>{''.join(blocks)}</CubeBlocks><DisplayName>{name}</DisplayName>"
+        "</CubeGrid></CubeGrids></ShipBlueprint></ShipBlueprints></Definitions>"
+    )
+
+
+class Game:
+    """One test client: input, the fixture ship and the saved world"""
+
+    def __init__(self, api: RemoteAPI):
+        self.api = api
+        self.grid = 0
+        self.name = ""
+        self.origin = (0.0, 0.0, 0.0)
+        self.before: set[int] = set()
+
+    # --- input ---------------------------------------------------------------
+
+    def press(self, key: str, modifiers: list[str] | None = None) -> None:
+        self.api.key(key, modifiers, hold_frames=1)
+        time.sleep(0.3)
+
+    def mouse(self, button: str, keys: list[str] | None = None) -> None:
+        # The GUI click endpoint does not reach Sections' selection handler
+        self.api.set_input_state(
+            keys=keys, mode="override", **{f"mouse_{button}": True}
+        )
+        time.sleep(0.1)
+        self.api.clear_input_state()
+        time.sleep(0.5)
+
+    def world(self, cell, grid: int | None = None) -> list[float]:
+        return self.api.call([CallOp.grid_to_world(grid or self.grid, cell)]).call(0)[
+            "world"
+        ]
+
+    def exists(self, cell, grid: int | None = None) -> bool:
+        return self.api.call([CallOp.cube_exists(grid or self.grid, cell)]).call(0)[
+            "exists"
+        ]
+
+    def look_from(self, eye, target) -> None:
+        # A flying character keeps whatever roll it has, so place the feet below
+        # the head along its own up vector. Turning changes that vector; repeat.
+        for _ in range(3):
+            up = self.api.get_character()["up"]
+            self.api.character_teleport(*(e - 1.6 * u for e, u in zip(eye, up)))
+            time.sleep(0.3)
+            self.api.character_look_at(*target, tolerance=0.5)
+            time.sleep(0.3)
+
+    def aim(self, cell, grid: int | None = None) -> dict:
+        """Looks at a block from 7 m in front of it (grid +Z)"""
+        target = self.world(cell, grid)
+        self.look_from((target[0], target[1], target[2] + 7), target)
+        hit = self.api.get_character_target(15)
+        block = hit.get("block") or {}
+        assert hit.get("hit") and tuple(block.get("min", ())) == tuple(cell), (
+            cell,
+            hit,
+        )
+        return hit
+
+    def leave_screens(self) -> None:
+        self.press("Escape")
+        if self.api.get_state()["paused"]:
+            self.press("Escape")
+
+    # --- Sections operations ---------------------------------------------------
+
+    def select(self, first, second) -> None:
+        """Selects the box between two blocks and leaves the aim on the second one,
+        which becomes the origin block of a copy. The clipboard keeps the copy's
+        orientation to the camera, so `paste_on` looks the same way."""
+        self.aim(first)
+        self.press("NumPad0")
+        self.mouse("left")
+        self.aim(second)
+        self.mouse("left")
+
+    # Ctrl inverts the "Include intersecting blocks" setting (off in the tests),
+    # which takes in the 1x2x1 rotor stators of a one block high box
+    # A copy or cut activates the clipboard a moment later. An Escape before
+    # that would miss it, and the next click would paste.
+    def cut(self, first, second, ctrl: bool = False) -> None:
+        self.select(first, second)
+        self.mouse("right", ["LeftControl"] if ctrl else None)
+        time.sleep(1)
+
+    def copy(self, first, second, ctrl: bool = False) -> None:
+        self.select(first, second)
+        self.mouse("left", ["LeftControl"] if ctrl else None)
+        time.sleep(1)
+
+    def delete(self, first, second, ctrl: bool = False) -> None:
+        self.select(first, second)
+        self.press("Back", ["LeftControl"] if ctrl else None)
+
+    def paste_on(self, cell, grid: int | None = None, alt: bool = False) -> None:
+        """Pastes the clipboard snapped to a grid: its origin block goes on top of
+        `cell`. Alt disables the placement test, which takes the pasted section
+        for a solid box. The clipboard stays active afterwards; leave it with Escape."""
+        target = self.world(cell, grid)
+        top = (target[0], target[1] + 1.25, target[2])
+        self.look_from((top[0], top[1] + 6, top[2] + 0.01), top)
+        if alt:
+            # Sections reads Alt while the clipboard is active, before the click
+            self.api.set_input_state(keys=["LeftAlt"], mode="override")
+            time.sleep(0.3)
+            self.api.set_input_state(keys=["LeftAlt"], mouse_left=True, mode="override")
+            time.sleep(0.1)
+            self.api.clear_input_state()
+        else:
+            self.api.click(*CENTER)
+        time.sleep(1.5)
+        self.leave_screens()
+
+    def paste_free(self) -> list[int]:
+        """Pastes the clipboard into empty space above the fixture; returns the new grids"""
+        before = {g["entityId"] for g in self.api.list_grids()}
+        self.look_from(
+            (self.origin[0], self.origin[1] + 60, self.origin[2] + 30),
+            (self.origin[0], self.origin[1] + 60, self.origin[2] + 10),
+        )
+        self.api.click(*CENTER)
+        time.sleep(1.5)
+        self.leave_screens()
+        return [
+            g["entityId"] for g in self.api.list_grids() if g["entityId"] not in before
+        ]
+
+    # --- fixture ---------------------------------------------------------------
+
+    def spawn(self, name: str) -> int:
+        """Pastes the fixture ship at a place of its own, far from the world's grids"""
+        api = self.api
+        if api.get_state()["paused"]:
+            self.press("Escape")
+        if api.get_character().get("controlledEntity"):
+            api.character_use()
+            time.sleep(0.5)
+        if not api.get_character()["jetpack"]:
+            self.press("X")
+        api.character_set_dampeners(True)
+        n = next(_places) % 10000
+        self.origin = (
+            100000.0 + 100 * (n % 100),
+            100000.0 + 100 * (n // 100),
+            100000.0,
+        )
+        api.character_teleport(self.origin[0], self.origin[1] + 10, self.origin[2] + 30)
+        time.sleep(0.5)
+        self.name = name
+        self.drop_clipboard()
+        self.before = {g["entityId"] for g in api.list_grids()}
+        self.grid = api.paste_blueprint(
+            xml=blueprint(name), position=self.origin, forward=(0, 0, -1), up=(0, 1, 0)
+        )[0]["entityId"]
+        time.sleep(1)
+        # The turret controller binds a rotor through its head's grid; the game
+        # crashes binding one without a head (see test_turret_rotor_without_head)
+        for rotor in ("Azimuth", "Elevation"):
+            api.apply_action(self.grid, TARGETS[rotor][0], "AddRotorTopPart")
+        time.sleep(1)
+        return self.grid
+
+    def drop_clipboard(self) -> None:
+        """Escape does not always reach a clipboard that a paste left active, and
+        the next click would paste it. Click into empty space until nothing comes
+        out, removing whatever does."""
+        for _ in range(3):
+            before = {g["entityId"] for g in self.api.list_grids()}
+            self.api.click(*CENTER)
+            time.sleep(1)
+            pasted = [
+                g["entityId"]
+                for g in self.api.list_grids()
+                if g["entityId"] not in before
+            ]
+            if not pasted:
+                return
+            for grid in pasted:
+                self.api.close_grid(grid)
+            self.leave_screens()
+        raise AssertionError("The clipboard keeps pasting")
+
+    def cleanup(self) -> None:
+        """Removes every grid the test made: the ship, its rotor heads, the pastes"""
+        for grid in self.api.list_grids():
+            if grid["entityId"] not in self.before:
+                self.api.close_grid(grid["entityId"])
+
+    # --- the saved world -------------------------------------------------------
+
+    def save(self) -> ET.Element:
+        api = self.api
+        path = Path(api.get_state()["path"])
+        api.save()
+        time.sleep(1)
+        deadline = time.monotonic() + 120
+        while api.get_state()["saving"]:
+            assert time.monotonic() < deadline, "The save did not finish"
+            time.sleep(0.5)
+        return ET.parse(path / "SANDBOX_0_0_0_.sbs").getroot()
+
+    def saved_grids(self, root: ET.Element | None = None) -> dict[int, ET.Element]:
+        root = root if root is not None else self.save()
+        return {
+            int(g.findtext("EntityId")): g
+            for g in root.iter("MyObjectBuilder_EntityBase")
+            if g.get(XSI) == "MyObjectBuilder_CubeGrid"
+            and (g.findtext("DisplayName") or "").startswith(self.name)
+        }
+
+
+def storage(block: ET.Element) -> str | None:
+    """The Sections block reference data of a saved block"""
+    for item in block.iter("item"):
+        if item.findtext("Key") == STORAGE_KEY:
+            return item.findtext("Value")
+    return None
+
+
+def guid(block: ET.Element) -> str | None:
+    data = storage(block)
+    return data.split("\n", 1)[0].strip() if data else None
+
+
+def blocks(grids) -> dict[str, ET.Element]:
+    """Named blocks of saved grids; a name on several grids gets a #n suffix"""
+    named: dict[str, ET.Element] = {}
+    for grid in grids:
+        for block in grid.find("CubeBlocks"):
+            name = block.findtext("CustomName")
+            if name:
+                key, n = name, 1
+                while key in named:
+                    n += 1
+                    key = f"{name} #{n}"
+                named[key] = block
+    return named
+
+
+def references(grids, owner: str = "") -> dict[str, dict]:
+    """What each owner of these grids refers to, by target name. A reference to a
+    block that is not on these grids reads as None."""
+    named = blocks(grids)
+    names = {block.findtext("EntityId"): name for name, block in named.items()}
+
+    def name(entity_id):
+        return names.get(entity_id) if entity_id not in (None, "0") else None
+
+    result = {}
+    for key, block in named.items():
+        if key.split(" #")[0] not in OWNERS or (owner and key != owner):
+            continue
+        refs = {}
+        for slot in block.findall("./Toolbar/Slots/Slot"):
+            target = slot.findtext("Data/BlockEntityId")
+            if target:
+                refs[f"slot {slot.findtext('Index')}"] = name(target)
+        if block.find("SelectedBlocks") is not None:
+            # A selection, not a list: its order changes with the restore
+            refs["selected"] = sorted(
+                (name(x.text) for x in block.findall("SelectedBlocks/long")), key=str
+            )
+        if block.findtext("BindedCamera"):
+            refs["camera"] = name(block.findtext("BindedCamera"))
+        if block.get(XSI) == "MyObjectBuilder_TurretControlBlock":
+            refs["azimuth"] = name(block.findtext("AzimuthId"))
+            refs["elevation"] = name(block.findtext("ElevationId"))
+            refs["camera"] = name(block.findtext("CameraId"))
+            refs["tools"] = [name(x.text) for x in block.findall("ToolIds/long")]
+        result[key] = refs
+    return result
+
+
+def broken(refs: dict[str, dict]) -> dict[str, list[str]]:
+    """The references of each owner that point at no block of the grids"""
+    result = {}
+    for owner, items in refs.items():
+        bad = [
+            k
+            for k, v in items.items()
+            if v is None or (isinstance(v, list) and None in v)
+        ]
+        if bad:
+            result[owner] = bad
+    return result
+
+
+# The turret controller's toolbar is not backed up and its restored tools come
+# on top of the stale ones; their own tests track that (TURRET_TICKET)
+TURRET_TICKET = "se1/tickets/SE1-0106.md"
+TURRET_GAPS = ("slot 0", "tools")
+
+
+def without_turret_gaps(refs: dict[str, dict]) -> dict[str, dict]:
+    return {
+        owner: {
+            k: v for k, v in items.items() if owner != "Turret" or k not in TURRET_GAPS
+        }
+        for owner, items in refs.items()
+    }
