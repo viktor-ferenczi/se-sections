@@ -31,7 +31,7 @@ Release the slot when you are done (`slot.sh release 11`).
 ## Block references and rebuilding
 
 ```bash
-uv run pytest tests                  # offline, about 5 minutes
+uv run pytest tests                  # offline, about 8 minutes
 uv run pytest tests/ds               # dedicated server
 ```
 
@@ -67,6 +67,28 @@ owners and targets together, a copy pasted into empty space, a duplicate
 pasted onto the same grid (it gets new GUIDs and the owners keep pointing at
 the originals), and the reference data in a section blueprint (Enter).
 
+`test_reference_world.py` uses a mechanical group of six grids from Viktor's
+manual test world: a static large grid (LG), a small grid (SG) on its
+advanced rotor, and two hinge arms with solar grids on SG.
+`data/make_reference_blueprint.py` extracts it into
+`data/block-reference-test.sbc`. Every terminal block gets a name, and timer,
+sensor and defensive combat blocks of both sizes are added, as well as a
+button panel slot. The two rotating lights come from a DLC, which a client
+without Steam cannot paste, so timer blocks replace them. References cross
+every level of the group: toolbars, the remote control's camera, event
+controller selections, both turret controllers' rotors, hinges, cameras and
+guns, the offensive combat block's weapons and the AI recorder's waypoint
+actions. Each test cuts one section and pastes it back, and every reference
+of the group must match the blueprint: the large grid's advanced rotor (SG
+and its four subgrids come along), an SG rotor (a hinge arm and a solar grid
+come along), the large grid's owners, and SG's event controller. These pastes
+hold Alt, because the placement test takes each pasted grid for a solid box,
+and in this group the boxes overlap.
+
+The harness levels the character's roll with Q and E before each aim. Upside
+down in space, the camera sits inside the character's body, and the aim ray
+hits the character.
+
 Known defects are expected failures, tied to their tickets:
 `se1/tickets/SE1-0105.md` (crash restoring a turret controller's rotor without
 a head, not run), `SE1-0106.md` (turret controller toolbar and tools) and
@@ -80,9 +102,9 @@ dedicated server and nothing restores references there. The tests check that
 the client runs Sections and that copy, cut and delete leave the grid and the
 clipboard alone.
 
-Not covered: the offensive combat block's weapon list and the AI recorder's
-waypoint toolbars, which live in component data the fixture does not write,
-and pasting a section blueprint back through the Blueprints screen.
+Not covered: pasting a section blueprint back through the Blueprints screen.
+A paste onto a side face of a dynamic small grid makes a new grid instead of
+merging, so the SG tests paste onto top faces.
 
 # In-game cutaway checks
 

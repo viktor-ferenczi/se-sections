@@ -10,6 +10,7 @@ place the game exposes toolbars, block references and mod storage.
 from __future__ import annotations
 
 import itertools
+import math
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -59,7 +60,7 @@ EXPECTED = {
     "Timer": {"slot 0": "Battery A"},
     "Cockpit": {"slot 0": "Battery A", "slot 1": "Battery B", "slot 2": "Camera"},
     "Sensor": {"slot 0": "Battery B"},
-    "Buttons": {"slot 0": "Battery A"},
+    "Buttons": {"slot 0": "Battery A", "button names": ["0:Lamp"]},
     "Event": {"slot 0": "Battery B", "selected": ["Battery A", "Battery B"]},
     "Remote": {"camera": "Camera"},
     "Turret": {
@@ -70,8 +71,6 @@ EXPECTED = {
         "tools": ["Battery A", "Battery B"],
     },
     "Defensive": {"slot 0": "Battery A"},
-    # The game does not save this block's toolbar
-    "Flight": {},
     "Offensive": {"slot 0": "Battery A"},
 }
 
@@ -162,6 +161,8 @@ class Game:
         self.name = ""
         self.origin = (0.0, 0.0, 0.0)
         self.before: set[int] = set()
+        self.pasted: list[int] = []
+        self.aim_side = (0, 0, 1)
 
     # --- input ---------------------------------------------------------------
 
@@ -190,25 +191,71 @@ class Game:
     def look_from(self, eye, target) -> None:
         # A flying character keeps whatever roll it has, so place the feet below
         # the head along its own up vector. Turning changes that vector; repeat.
-        for _ in range(3):
+        for i in range(4):
             # float(): Remote sends small doubles as strings, se1/tickets/SE1-0109.md
             up = [float(u) for u in self.api.get_character()["up"]]
             self.api.character_teleport(*(e - 1.6 * u for e, u in zip(eye, up)))
             time.sleep(0.3)
             self.api.character_look_at(*target, tolerance=0.5)
             time.sleep(0.3)
+            if i == 1:
+                self.level()
 
-    def aim(self, cell, grid: int | None = None) -> dict:
-        """Looks at a block from 7 m in front of it (grid +Z)"""
-        target = self.world(cell, grid)
-        self.look_from((target[0], target[1], target[2] + 7), target)
-        hit = self.api.get_character_target(15)
-        block = hit.get("block") or {}
-        assert hit.get("hit") and tuple(block.get("min", ())) == tuple(cell), (
-            cell,
-            hit,
-        )
-        return hit
+    def level(self, screen_up=(0.0, 1.0, 0.0)) -> None:
+        """Rolls the character (Q and E) until its up points along screen_up. An
+        upside down character in space leaves the camera inside its own body, and
+        the aim ray hits the character. Looking along screen_up, roll is free."""
+        dot = lambda p, q: sum(x * y for x, y in zip(p, q))  # noqa: E731
+        for _ in range(60):
+            character = self.api.get_character()
+            forward = [float(x) for x in character["forward"]]
+            up = [float(x) for x in character["up"]]
+            if abs(dot(forward, screen_up)) > 0.9:
+                return
+            want = [w - dot(screen_up, forward) * f for w, f in zip(screen_up, forward)]
+            cross = [
+                up[1] * want[2] - up[2] * want[1],
+                up[2] * want[0] - up[0] * want[2],
+                up[0] * want[1] - up[1] * want[0],
+            ]
+            angle = math.degrees(math.atan2(dot(cross, forward), dot(up, want)))
+            if abs(angle) < 3:
+                return
+            # Q rolls about -80 degrees a second around the view axis, E the other way
+            self.api.set_input_state(keys=["E" if angle > 0 else "Q"], mode="override")
+            time.sleep(min(1.0, max(0.02, abs(angle) / 100)))
+            self.api.clear_input_state()
+            time.sleep(0.15)
+
+    def axis(
+        self, cell, side, grid: int | None = None
+    ) -> tuple[list[float], list[float], float]:
+        """World center of a cell, the unit vector of a grid axis, the cell size"""
+        center = self.world(cell, grid)
+        step = [
+            a - b
+            for a, b in zip(
+                self.world(tuple(c + d for c, d in zip(cell, side)), grid), center
+            )
+        ]
+        size = math.sqrt(sum(x * x for x in step))
+        return center, [x / size for x in step], size
+
+    def aim(
+        self, cell, grid: int | None = None, side=(0, 0, 1), distance: float = 7
+    ) -> dict:
+        """Looks at a block from `distance` metres along a grid axis, +Z by default.
+        A list of axes is tried in turn, for blocks that moving subgrids may hide."""
+        for axis in side if isinstance(side, list) else [side]:
+            target, direction, _ = self.axis(cell, axis, grid)
+            eye = [t + distance * d for t, d in zip(target, direction)]
+            self.look_from(eye, target)
+            hit = self.api.get_character_target(15)
+            block = hit.get("block") or {}
+            if hit.get("hit") and tuple(block.get("min", ())) == tuple(cell):
+                self.aim_side = axis
+                return hit
+        raise AssertionError((cell, hit))
 
     def leave_screens(self) -> None:
         self.press("Escape")
@@ -217,23 +264,29 @@ class Game:
 
     # --- Sections operations ---------------------------------------------------
 
-    def select(self, first, second) -> None:
+    def select(self, first, second, grid=None, side=(0, 0, 1)) -> None:
         """Selects the box between two blocks and leaves the aim on the second one,
-        which becomes the origin block of a copy. The clipboard keeps the copy's
-        orientation to the camera, so `paste_on` looks the same way."""
-        self.aim(first)
+        which becomes the origin block of a copy"""
+        self.aim(first, grid, side)
         self.press("NumPad0")
         self.mouse("left")
-        self.aim(second)
+        self.aim(second, grid, side)
         self.mouse("left")
 
     # Ctrl inverts the "Include intersecting blocks" setting (off in the tests),
     # which takes in the 1x2x1 rotor stators of a one block high box
     # A copy or cut activates the clipboard a moment later. An Escape before
     # that would miss it, and the next click would paste.
-    def cut(self, first, second, ctrl: bool = False) -> None:
-        self.select(first, second)
+    def cut(self, first, second, ctrl: bool = False, grid=None, side=(0, 0, 1)) -> None:
+        self.select(first, second, grid, side)
         self.mouse("right", ["LeftControl"] if ctrl else None)
+        time.sleep(1)
+
+    def cut_block(self, cell, grid=None, side=(0, 0, 1)) -> None:
+        """Cuts the aimed block alone (Delete while choosing the first corner)"""
+        self.aim(cell, grid, side)
+        self.press("NumPad0")
+        self.press("Delete")
         time.sleep(1)
 
     def copy(self, first, second, ctrl: bool = False) -> None:
@@ -245,13 +298,29 @@ class Game:
         self.select(first, second)
         self.press("Back", ["LeftControl"] if ctrl else None)
 
-    def paste_on(self, cell, grid: int | None = None, alt: bool = False) -> None:
-        """Pastes the clipboard snapped to a grid: its origin block goes on top of
-        `cell`. Alt disables the placement test, which takes the pasted section
-        for a solid box. The clipboard stays active afterwards; leave it with Escape."""
-        target = self.world(cell, grid)
-        top = (target[0], target[1] + 1.25, target[2])
-        self.look_from((top[0], top[1] + 6, top[2] + 0.01), top)
+    def paste_on(
+        self,
+        cell,
+        grid: int | None = None,
+        alt: bool = False,
+        face=(0, 1, 0),
+        distance: float = 6,
+        toward=None,
+    ) -> None:
+        """Pastes the clipboard snapped to a grid: its origin block goes next to
+        `cell`, on its `face` (+Y by default), looked at from `distance` metres.
+        Alt disables the placement test, which takes the pasted section for a
+        solid box. The clipboard stays active afterwards; leave it with Escape.
+
+        The clipboard keeps the copy's orientation to the camera. Pass the grid
+        axis the copy was aimed from as `toward`: the eye leans that way, so the
+        camera faces the grid as it did when copying. By default it is the axis of
+        the last aim, which is where the copy was made from."""
+        center, direction, size = self.axis(cell, face, grid)
+        _, lean, _ = self.axis(cell, toward or self.aim_side, grid)
+        surface = [c + d * size / 2 for c, d in zip(center, direction)]
+        eye = [p + distance * d + 0.3 * e for p, d, e in zip(surface, direction, lean)]
+        self.look_from(eye, surface)
         if alt:
             # Sections reads Alt while the clipboard is active, before the click
             self.api.set_input_state(keys=["LeftAlt"], mode="override")
@@ -280,8 +349,9 @@ class Game:
 
     # --- fixture ---------------------------------------------------------------
 
-    def spawn(self, name: str) -> int:
-        """Pastes the fixture ship at a place of its own, far from the world's grids"""
+    def spawn(self, name: str, xml: str | None = None) -> int:
+        """Pastes the fixture ship, or the blueprint in `xml`, at a place of its own,
+        far from the world's grids"""
         api = self.api
         if api.get_state()["paused"]:
             self.press("Escape")
@@ -302,16 +372,31 @@ class Game:
         self.name = name
         self.drop_clipboard()
         self.before = {g["entityId"] for g in api.list_grids()}
-        self.grid = api.paste_blueprint(
-            xml=blueprint(name), position=self.origin, forward=(0, 0, -1), up=(0, 1, 0)
-        )[0]["entityId"]
+        self.pasted = [
+            g["entityId"]
+            for g in api.paste_blueprint(
+                xml=xml or blueprint(name),
+                position=self.origin,
+                forward=(0, 0, -1),
+                up=(0, 1, 0),
+            )
+        ]
+        self.grid = self.pasted[0]
         time.sleep(1)
+        if xml:
+            return self.grid
         # The turret controller binds a rotor through its head's grid; the game
         # crashes binding one without a head (see test_turret_rotor_without_head)
         for rotor in ("Azimuth", "Elevation"):
             api.apply_action(self.grid, TARGETS[rotor][0], "AddRotorTopPart")
         time.sleep(1)
         return self.grid
+
+    def spawn_blueprint(self, path: Path, name: str) -> list[int]:
+        """Pastes a blueprint file at a place of its own; its first grid becomes
+        self.grid. Returns all of its grids."""
+        self.spawn(name, xml=path.read_text(encoding="utf-8"))
+        return self.pasted
 
     def drop_clipboard(self) -> None:
         """Escape does not always reach a clipboard that a paste left active, and
@@ -358,7 +443,7 @@ class Game:
             int(g.findtext("EntityId")): g
             for g in root.iter("MyObjectBuilder_EntityBase")
             if g.get(XSI) == "MyObjectBuilder_CubeGrid"
-            and (g.findtext("DisplayName") or "").startswith(self.name)
+            and int(g.findtext("EntityId")) not in self.before
         }
 
 
@@ -390,37 +475,62 @@ def blocks(grids) -> dict[str, ET.Element]:
     return named
 
 
-def references(grids, owner: str = "") -> dict[str, dict]:
-    """What each owner of these grids refers to, by target name. A reference to a
-    block that is not on these grids reads as None."""
+def references(grids) -> dict[str, dict]:
+    """What each block of these grids refers to, by target name, for the blocks
+    that refer to any. A reference to a block not on these grids reads as None.
+    Only direct children are read: a projector holds whole projected grids."""
     named = blocks(grids)
     names = {block.findtext("EntityId"): name for name, block in named.items()}
 
     def name(entity_id):
         return names.get(entity_id) if entity_id not in (None, "0") else None
 
+    def names_of(elements):
+        # Selections and tool lists are sets, their order changes with a restore
+        return sorted((name(x.text) for x in elements), key=str)
+
+    components = "./ComponentContainer/Components/ComponentData/Component"
     result = {}
     for key, block in named.items():
-        if key.split(" #")[0] not in OWNERS or (owner and key != owner):
-            continue
+        kind = block.get(XSI).replace("MyObjectBuilder_", "")
         refs = {}
         for slot in block.findall("./Toolbar/Slots/Slot"):
             target = slot.findtext("Data/BlockEntityId")
             if target:
                 refs[f"slot {slot.findtext('Index')}"] = name(target)
         if block.find("SelectedBlocks") is not None:
-            # A selection, not a list: its order changes with the restore
-            refs["selected"] = sorted(
-                (name(x.text) for x in block.findall("SelectedBlocks/long")), key=str
-            )
+            refs["selected"] = names_of(block.findall("SelectedBlocks/long"))
         if block.findtext("BindedCamera"):
             refs["camera"] = name(block.findtext("BindedCamera"))
-        if block.get(XSI) == "MyObjectBuilder_TurretControlBlock":
+        if kind == "TurretControlBlock":
             refs["azimuth"] = name(block.findtext("AzimuthId"))
             refs["elevation"] = name(block.findtext("ElevationId"))
             refs["camera"] = name(block.findtext("CameraId"))
-            refs["tools"] = [name(x.text) for x in block.findall("ToolIds/long")]
-        result[key] = refs
+            refs["tools"] = names_of(block.findall("ToolIds/long"))
+        if kind == "OffensiveCombatBlock":
+            # Each attack pattern keeps a weapon list; the selected one is filled
+            weapons = [
+                w for w in block.findall(f"{components}/SelectedWeapons") if len(w)
+            ]
+            if weapons:
+                refs["weapons"] = names_of(weapons[0])
+        if kind == "PathRecorderBlock":
+            waypoints = block.findall(
+                f"{components}/Waypoints/MyObjectBuilder_AutopilotWaypoint"
+            )
+            for i, waypoint in enumerate(waypoints):
+                refs[f"waypoint {i}"] = [
+                    name(item.findtext("BlockEntityId"))
+                    for item in waypoint.findall("Actions/MyObjectBuilder_ToolbarItem")
+                ]
+        if kind == "ButtonPanel":
+            items = block.findall("./CustomButtonNames/dictionary/item")
+            if items:
+                refs["button names"] = sorted(
+                    f"{i.findtext('Key')}:{i.findtext('Value')}" for i in items
+                )
+        if refs:
+            result[key] = refs
     return result
 
 
@@ -438,16 +548,16 @@ def broken(refs: dict[str, dict]) -> dict[str, list[str]]:
     return result
 
 
-# The turret controller's toolbar is not backed up and its restored tools come
-# on top of the stale ones; their own tests track that (TURRET_TICKET)
+# Turret controllers: their toolbar is not backed up, and restored tools come on
+# top of the stale ones. The fixture's own tests track that (TURRET_TICKET).
 TURRET_TICKET = "se1/tickets/SE1-0106.md"
-TURRET_GAPS = ("slot 0", "tools")
 
 
 def without_turret_gaps(refs: dict[str, dict]) -> dict[str, dict]:
+    def gap(items, key):
+        return "azimuth" in items and (key == "tools" or key.startswith("slot"))
+
     return {
-        owner: {
-            k: v for k, v in items.items() if owner != "Turret" or k not in TURRET_GAPS
-        }
+        owner: {k: v for k, v in items.items() if not gap(items, k)}
         for owner, items in refs.items()
     }

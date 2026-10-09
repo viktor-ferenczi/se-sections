@@ -13,7 +13,7 @@ testpaths = ["tests"]
 # The dedicated server tests run on their own: uv run pytest tests/ds
 norecursedirs = ["ds", "physics-policy"]
 # The other test_*.py files are scripts, run one by one (tests/README.md)
-python_files = ["test_references.py", "test_rebuild.py", "test_multiplayer.py"]
+python_files = ["test_references.py", "test_rebuild.py", "test_reference_world.py", "test_multiplayer.py"]
 
 [tool.uv]
 package = false
