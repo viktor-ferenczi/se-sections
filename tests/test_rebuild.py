@@ -17,6 +17,11 @@ def refs(game, grids=None):
     return h.references((grids or game.saved_grids()).values())
 
 
+def local_blueprints(game) -> Path:
+    # The world is in <appdata>/Saves/tests/<world>
+    return Path(game.api.get_state()["path"]).parents[2] / "Blueprints" / "local"
+
+
 def assert_restored(game, grids=None):
     assert h.without_turret_gaps(refs(game, grids)) == h.without_turret_gaps(EXPECTED)
 
@@ -134,3 +139,23 @@ def test_blueprint_carries_reference_data(game):
     for name in ("Battery A", "Battery B", "Camera"):
         assert h.guid(named[name]) in text, name
     assert h.STORAGE_KEY in text
+
+
+def test_blueprint_pasted_back(game):
+    """A section blueprint (Enter) loaded through the Blueprints screen restores
+    the references of the blocks it brings back, from the data in the file"""
+    blueprints = local_blueprints(game) / "Sections"
+    before = set(blueprints.glob("*/bp.sbc")) if blueprints.exists() else set()
+    game.select(*TARGET_ROW)
+    game.press("Enter")
+    game.leave_screens()
+    added = set(blueprints.glob("*/bp.sbc")) - before
+    assert len(added) == 1, added
+    game.delete(*TARGET_ROW)
+    assert not any(game.exists(pos) for pos in FLAT_TARGETS)
+    assert h.broken(refs(game))
+    game.blueprint_to_clipboard("Sections", added.pop().parent.name)
+    # The rotor stators stayed in the gap of the section
+    game.paste_on((15, 0, 0), alt=True)
+    assert all(game.exists(pos) for pos in FLAT_TARGETS)
+    assert_restored(game)

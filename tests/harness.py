@@ -333,6 +333,62 @@ class Game:
         time.sleep(1.5)
         self.leave_screens()
 
+    def blueprint_to_clipboard(self, folder: str, title: str) -> None:
+        """Loads a local blueprint into the clipboard through the Blueprints
+        screen (F10): picks the folder, selects the blueprint, Copy to clipboard"""
+        api = self.api
+        self.press("F10")
+        time.sleep(1.5)
+        screen = len(api.list_screens()) - 1
+        icons = [
+            c
+            for c in api.get_controls(screen)
+            if c["type"] == "MyGuiControlButton"
+            and c.get("visible")
+            and not (c.get("properties") or {}).get("text")
+        ]
+        # Refresh, group, sort, new, directory, thumbnails, workshop
+        api.control_click(name=icons[4]["name"], screen=screen)
+        time.sleep(1.5)
+        folders = len(api.list_screens()) - 1
+        controls = api.get_controls(folders)
+        path = next(c for c in controls if c["type"] == "MyGuiControlLabel")
+        # The screen remembers the folder it showed last
+        if not path["properties"]["text"].endswith("/" + folder):
+            box = next(c for c in controls if c["type"] == "MyGuiControlListbox")
+            row = [i["text"] for i in box["properties"]["items"]].index(folder)
+            top = box["position"]["y"] - box["size"]["y"] / 2
+            # Rows are 0.035 high; entering a folder takes a double click
+            api.click(640, int((top + 0.025 + 0.035 * row) * 720), double=True)
+            time.sleep(1)
+        api.control_click(text="Open", screen=folders)
+        time.sleep(1.5)
+
+        def items():
+            controls = api.get_controls(screen)
+            return next(c for c in controls if c["type"] == "MyGuiControlList")[
+                "children"
+            ]
+
+        # Clicks land on the wrong item further down the list; filter it to one
+        search = next(
+            c for c in api.get_controls(screen) if c["type"] == "MyGuiControlSearchBox"
+        )
+        api.control_set(search["name"], title, screen=screen)
+        time.sleep(1.5)
+        item = next(c for c in items() if c["properties"]["title"] == title)
+        api.click(
+            int((item["topLeft"]["x"] + item["size"]["x"] / 2) * 1280),
+            int((item["topLeft"]["y"] + item["size"]["y"] / 2) * 720),
+        )
+        time.sleep(1)
+        selected = [
+            c["properties"]["title"] for c in items() if c["properties"]["selected"]
+        ]
+        assert selected == [title], selected
+        api.control_click(text="Copy to clipboard", screen=screen)
+        time.sleep(2)
+
     def paste_free(self) -> list[int]:
         """Pastes the clipboard into empty space above the fixture; returns the new grids"""
         before = {g["entityId"] for g in self.api.list_grids()}

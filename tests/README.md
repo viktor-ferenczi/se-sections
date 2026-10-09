@@ -31,7 +31,7 @@ Release the slot when you are done (`slot.sh release 11`).
 ## Block references and rebuilding
 
 ```bash
-uv run pytest tests                  # offline, about 8 minutes
+uv run pytest tests                  # offline, about 9 minutes
 uv run pytest tests/ds               # dedicated server
 ```
 
@@ -65,7 +65,10 @@ data from the save. The save is the only place where the game exposes them.
 Alt to skip the placement test), three cut and paste rounds in a row, cutting
 owners and targets together, a copy pasted into empty space, a duplicate
 pasted onto the same grid (it gets new GUIDs and the owners keep pointing at
-the originals), and the reference data in a section blueprint (Enter).
+the originals), and the reference data in a section blueprint (Enter). It
+also deletes a section after saving it as a blueprint, loads the blueprint
+through the Blueprints screen (F10, Copy to clipboard) and pastes it back,
+which restores the references from the data in the file.
 
 `test_reference_world.py` uses a mechanical group of six grids from Viktor's
 manual test world: a static large grid (LG), a small grid (SG) on its
@@ -102,7 +105,6 @@ dedicated server and nothing restores references there. The tests check that
 the client runs Sections and that copy, cut and delete leave the grid and the
 clipboard alone.
 
-Not covered: pasting a section blueprint back through the Blueprints screen.
 A paste onto a side face of a dynamic small grid makes a new grid instead of
 merging, so the SG tests paste onto top faces.
 
