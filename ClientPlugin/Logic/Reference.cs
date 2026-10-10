@@ -260,11 +260,12 @@ namespace ClientPlugin.Logic
         }
     }
 
-    public class TurretController : Reference
+    public class TurretController : ToolbarOwner
     {
         private const string TurretControlGroupName = "Turret";
         private const string ToolsGroupName = "Tools";
-        private IMyTurretControlBlock Block => (IMyTurretControlBlock)TerminalBlock; 
+        private MyTurretControlBlock Block => (MyTurretControlBlock)TerminalBlock;
+        private IMyTurretControlBlock Turret => (IMyTurretControlBlock)TerminalBlock;
 
         public TurretController(MyTerminalBlock terminalBlock) : base(terminalBlock)
         {
@@ -272,10 +273,12 @@ namespace ClientPlugin.Logic
         
         public override void Backup(Dictionary<long, Reference> referenceByBlock)
         {
+            base.Backup(referenceByBlock);
+
             var group = GetOrCreateGroup(TurretControlGroupName);
             TryBackupBlockId(referenceByBlock, group, "AzimuthRotor", Block.AzimuthRotor?.EntityId ?? 0);
             TryBackupBlockId(referenceByBlock, group, "ElevationRotor", Block.ElevationRotor?.EntityId ?? 0);
-            TryBackupBlockId(referenceByBlock, group, "Camera", Block.Camera?.EntityId ?? 0);
+            TryBackupBlockId(referenceByBlock, group, "Camera", Turret.Camera?.EntityId ?? 0);
             
             group = GetOrCreateGroup(ToolsGroupName);
             var tools = new List<IngameIMyFunctionalBlock>();
@@ -287,49 +290,87 @@ namespace ClientPlugin.Logic
             }
         }
 
-        public override void Restore(Dictionary<long, Reference> referenceByBlock, Dictionary<string, Reference> referenceByGuid)
+        public override void Restore(
+            Dictionary<long, Reference> referenceByBlock,
+            Dictionary<string, Reference> referenceByGuid
+        )
         {
+            base.Restore(referenceByBlock, referenceByGuid);
+
             if (Groups.TryGetValue(TurretControlGroupName, out var group))
             {
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "AzimuthRotor", Block.AzimuthRotor?.EntityId ?? 0, out var azimuthBlockId))
-                    Block.AzimuthRotor = (MyMotorStator)referenceByBlock[azimuthBlockId].TerminalBlock;
+                // Binds the rotors by id like the block's deserialization does, because
+                // the AzimuthRotor and ElevationRotor setters throw on a rotor without a head
+                var azimuthSync = Block.GetBoundAzimuthSync();
+                if (
+                    TryRestoreBlockId(
+                        referenceByBlock,
+                        referenceByGuid,
+                        group,
+                        "AzimuthRotor",
+                        azimuthSync.Value,
+                        out var azimuthBlockId
+                    )
+                )
+                    azimuthSync.Value = azimuthBlockId;
 
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "ElevationRotor", Block.ElevationRotor?.EntityId ?? 0, out var elevationBlockId))
-                    Block.ElevationRotor = (MyMotorStator)referenceByBlock[elevationBlockId].TerminalBlock;
+                var elevationSync = Block.GetBoundElevationSync();
+                if (
+                    TryRestoreBlockId(
+                        referenceByBlock,
+                        referenceByGuid,
+                        group,
+                        "ElevationRotor",
+                        elevationSync.Value,
+                        out var elevationBlockId
+                    )
+                )
+                    elevationSync.Value = elevationBlockId;
 
-                if(TryRestoreBlockId(referenceByBlock, referenceByGuid, group, "Camera", Block.Camera?.EntityId ?? 0, out var cameraBlockId))
-                    Block.Camera = (MyCameraBlock)referenceByBlock[cameraBlockId].TerminalBlock;
+                if (
+                    TryRestoreBlockId(
+                        referenceByBlock,
+                        referenceByGuid,
+                        group,
+                        "Camera",
+                        Turret.Camera?.EntityId ?? 0,
+                        out var cameraBlockId
+                    )
+                )
+                    Turret.Camera = (MyCameraBlock)referenceByBlock[cameraBlockId].TerminalBlock;
             }
 
-            if (Groups.TryGetValue(ToolsGroupName, out group) && group.Count != 0)
+            if (!Groups.TryGetValue(ToolsGroupName, out group) || group.Count == 0)
+                return;
+
+            var boundToolIds = Block.GetBoundTools().Keys.ToList();
+            var toolIdsToRemove = boundToolIds
+                .Where(blockId =>
+                    !referenceByBlock.ContainsKey(blockId) && !MyEntities.EntityExists(blockId)
+                )
+                .ToList();
+
+            var toolsToAdd = new List<IngameIMyFunctionalBlock>(group.Count);
+            foreach (var guid in group.Values)
             {
-                var tools = new List<IngameIMyFunctionalBlock>();
-                Block.GetTools(tools);
-                var blockIdsToAdd = new List<IngameIMyFunctionalBlock>(group.Count);
-                var blockIdsToRemove = new List<IngameIMyFunctionalBlock>(group.Count);
-                foreach (var guid in group.Values)
-                { 
-                    if(!referenceByGuid.TryGetValue(guid, out var reference))
-                        continue;
-                    
-                    if (tools.Contains((IngameIMyFunctionalBlock)reference.TerminalBlock))
-                    {
-                        blockIdsToRemove.Add((IngameIMyFunctionalBlock)reference.TerminalBlock);
-                        continue;
-                    }
+                if (!referenceByGuid.TryGetValue(guid, out var reference))
+                    continue;
 
-                    blockIdsToAdd.Add((IngameIMyFunctionalBlock)reference.TerminalBlock);
-                }
+                if (boundToolIds.Contains(reference.TerminalBlock.EntityId))
+                    continue;
 
-                if (blockIdsToAdd.Count == 0) 
-                    return;
-
-                Block.RemoveTools(blockIdsToRemove.Take(blockIdsToAdd.Count).ToList());
-                Block.AddTools(blockIdsToAdd);
+                if (reference.TerminalBlock is IngameIMyFunctionalBlock tool)
+                    toolsToAdd.Add(tool);
             }
+
+            if (toolIdsToRemove.Count != 0)
+                Block.RemoveToolIds(toolIdsToRemove);
+
+            if (toolsToAdd.Count != 0)
+                Block.AddTools(toolsToAdd);
         }
     }
-    
+
     public class OffensiveCombat : ToolbarOwner
     {
         private const string WeaponsGroupName = "Weapons";
