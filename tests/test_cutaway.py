@@ -1,6 +1,6 @@
 """Run against a disposable creative world with rendering enabled.
 
-SE_REMOTE_URL=http://127.0.0.1:24188 python tests/test_cutaway.py
+SECTIONS_SLOT=<n> python tests/test_cutaway.py  (see tests/README.md)
 Uses the sibling Remote plugin's Python environment.
 """
 
@@ -15,6 +15,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO.parent / "remote" / "skills" / "se-remote"))
 from se_remote import RemoteAPI, OpError, CallOp  # noqa: E402
+import rig  # noqa: E402
+
+# The client of the test slot, or SE_REMOTE_URL for one started by hand
+URL = rig.remote_url()
 
 OUT = Path(os.environ.get("SECTIONS_TEST_OUTPUT", "/tmp/sections-test-results"))
 ORIGIN = (600000.0 + time.time() % 10000, 600000.0, 600000.0)
@@ -197,7 +201,7 @@ def main() -> None:
     global GRID_ID
     OUT.mkdir(parents=True, exist_ok=True)
     with RemoteAPI(
-        os.environ.get("SE_REMOTE_URL", "http://127.0.0.1:24188"),
+        URL,
         username="admin",
         password="SpaceEngineers",
     ) as api:

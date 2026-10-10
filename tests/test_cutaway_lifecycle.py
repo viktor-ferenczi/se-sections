@@ -1,6 +1,5 @@
 """Save/reload checks; run only against a disposable creative world."""
 
-import os
 import time
 
 import test_cutaway as t
@@ -9,7 +8,7 @@ import test_cutaway as t
 def main() -> None:
     t.OUT.mkdir(parents=True, exist_ok=True)
     with t.RemoteAPI(
-        os.environ.get("SE_REMOTE_URL", "http://127.0.0.1:24188"),
+        t.URL,
         username="admin",
         password="SpaceEngineers",
     ) as api:

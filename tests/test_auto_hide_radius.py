@@ -8,9 +8,7 @@ import test_cutaway as t
 
 
 def main():
-    with t.RemoteAPI(
-        "http://127.0.0.1:24188", username="admin", password="SpaceEngineers"
-    ) as api:
+    with t.RemoteAPI(t.URL, username="admin", password="SpaceEngineers") as api:
         if api.get_character().get("controlledEntity"):
             api.character_use()
             time.sleep(1)

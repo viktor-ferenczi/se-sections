@@ -69,9 +69,7 @@ def aim_far(api, cell):
 
 def main():
     t.OUT.mkdir(parents=True, exist_ok=True)
-    with t.RemoteAPI(
-        "http://127.0.0.1:24188", username="admin", password="SpaceEngineers"
-    ) as api:
+    with t.RemoteAPI(t.URL, username="admin", password="SpaceEngineers") as api:
         assert api.get_state()["active"]
         if api.get_character().get("controlledEntity"):
             api.character_use()

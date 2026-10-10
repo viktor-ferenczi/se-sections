@@ -50,7 +50,7 @@ def mouse(api, button):
 def main():
     t.OUT.mkdir(parents=True, exist_ok=True)
     with t.RemoteAPI(
-        t.os.environ.get("SE_REMOTE_URL", "http://127.0.0.1:24188"),
+        t.URL,
         username="admin",
         password="SpaceEngineers",
     ) as api:

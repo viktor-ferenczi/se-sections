@@ -47,9 +47,7 @@ def open_number(api, label):
 
 def main():
     t.OUT.mkdir(parents=True, exist_ok=True)
-    with t.RemoteAPI(
-        "http://127.0.0.1:24188", username="admin", password="SpaceEngineers"
-    ) as api:
+    with t.RemoteAPI(t.URL, username="admin", password="SpaceEngineers") as api:
         settings.open_settings(api)
         wait_screen(api, "SettingsScreen")
         for label, value, expected in [
