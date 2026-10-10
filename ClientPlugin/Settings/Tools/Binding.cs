@@ -34,11 +34,17 @@ namespace ClientPlugin.Settings.Elements
         public bool HasPressed(IMyInput input) =>
             Key != MyKeys.None && AreModifiersMatch(input) && input.IsNewKeyPressed(Key);
 
-        public bool HasPressedIgnoringCtrl(IMyInput input)
+        // Ctrl inverts "Include intersecting blocks" for these actions. A binding
+        // with Ctrl in it still requires Ctrl, so it does not fire without it.
+        public bool IsPressedIgnoringCtrl(IMyInput input) => IgnoringCtrl(input).IsPressed(input);
+
+        public bool HasPressedIgnoringCtrl(IMyInput input) => IgnoringCtrl(input).HasPressed(input);
+
+        private Binding IgnoringCtrl(IMyInput input)
         {
             var binding = this;
-            binding.Ctrl = input.IsAnyCtrlKeyPressed();
-            return binding.HasPressed(input);
+            binding.Ctrl |= input.IsAnyCtrlKeyPressed();
+            return binding;
         }
 
         private bool AreModifiersMatch(IMyInput input)
