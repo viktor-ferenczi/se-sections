@@ -35,6 +35,16 @@ Section editing works in creative mode, or in survival with creative tools
 enabled. Multiplayer section editing runs on the host. Cutaways can also run on
 multiplayer clients under the permissions described below.
 
+### New in 1.4.1
+
+Ctrl now inverts **Include intersecting blocks** for **Backspace** (delete) and
+**Enter** (save as blueprint) too. Before, Ctrl+Backspace and Ctrl+Enter did
+nothing.
+
+Pasting back the blocks a turret controller refers to no longer crashes the
+game when a rotor has no head. The turret controller's own toolbar is restored
+too, and its tool list no longer keeps the ids of tools that were cut.
+
 ### New in 1.4.0
 
 Blocks hidden without collision no longer get in the way of building. The
