@@ -7,8 +7,6 @@ Run against an isolated client: SECTIONS_SLOT=<n> uv run pytest tests
 
 from pathlib import Path
 
-import pytest
-
 import harness as h
 from harness import EXPECTED, OWNER_ROW, TARGET_ROW, TARGETS
 
@@ -45,9 +43,6 @@ def test_delete_then_paste_copy_back(game):
     assert_restored(game)
 
 
-@pytest.mark.xfail(
-    strict=True, reason="Ctrl+Backspace does nothing, se1/tickets/SE1-0108.md"
-)
 def test_ctrl_inverts_delete(game):
     game.delete(*TARGET_ROW, ctrl=True)
     assert not game.exists(TARGETS["Azimuth"][0])
