@@ -4,8 +4,6 @@ and pasted back onto their grid.
 Run against an isolated client: SECTIONS_SLOT=<n> uv run pytest tests
 """
 
-import pytest
-
 import harness as h
 from harness import EXPECTED, TARGET_ROW, OWNER_ROW, TARGETS
 
@@ -36,11 +34,7 @@ def test_cut_targets_and_paste_back(game):
     # Every owner lost its references with the cut, which proves the restore
     assert set(dangling) == {o for o, r in EXPECTED.items() if r}, dangling
 
-    grids = game.saved_grids()
-    assert h.without_turret_gaps(refs(game, grids)) == h.without_turret_gaps(EXPECTED)
-    # The rotor heads came along as subgrids and are attached again
-    named = h.blocks(grids.values())
-    assert all(named[n].findtext("TopBlockId") for n in ("Azimuth", "Elevation"))
+    assert refs(game) == EXPECTED
 
 
 def test_cut_owners_and_paste_back(game):
@@ -48,28 +42,27 @@ def test_cut_owners_and_paste_back(game):
     game.cut(*OWNER_ROW)
     assert not game.exists(OWNER_ROW[0])
     game.paste_on((0, 0, 0))
-    assert h.without_turret_gaps(refs(game)) == h.without_turret_gaps(EXPECTED)
+    assert refs(game) == EXPECTED
 
 
-@pytest.mark.xfail(strict=True, reason=f"Toolbar not backed up, {h.TURRET_TICKET}")
 def test_turret_toolbar_restored(game):
     cut_targets_and_paste_back(game)
     assert refs(game)["Turret"]["slot 0"] == "Battery B"
 
 
-@pytest.mark.xfail(strict=True, reason=f"Stale tools are kept, {h.TURRET_TICKET}")
 def test_turret_tools_restored_without_stale_entries(game):
+    """The ids of the cut tools are dropped, not kept next to the restored ones"""
     cut_targets_and_paste_back(game)
     assert refs(game)["Turret"]["tools"] == ["Battery A", "Battery B"]
 
 
-@pytest.mark.xfail(run=False, reason="Crashes the game, se1/tickets/SE1-0105.md")
 def test_turret_rotor_without_head(game):
-    """A turret controller bound to a rotor that has no head"""
-    game.api.apply_action(game.grid, TARGETS["Azimuth"][0], "Detach")
-    game.cut(*TARGET_ROW, ctrl=True)
-    game.paste_on((15, 0, 0))
+    """The fixture's rotors have no heads. Binding such a rotor through the
+    game's setters used to crash the game (se1/tickets/SE1-0105.md)."""
+    cut_targets_and_paste_back(game)
     assert game.api.get_state()["ready"]
+    turret = refs(game)["Turret"]
+    assert (turret["azimuth"], turret["elevation"]) == ("Azimuth", "Elevation")
 
 
 def test_reference_data_written_on_backup(game):

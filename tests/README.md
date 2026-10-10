@@ -45,7 +45,7 @@ Each test pastes its own fixture ship (`harness.py`). Ten blocks that refer
 to other blocks stand in one row: timer, cockpit, sensor, button panel, event
 controller, remote control, turret controller, defensive combat, flight
 movement and offensive combat blocks. Their targets stand in a second row:
-two batteries, a camera and two rotors with heads. The tests cut, copy,
+two batteries, a camera and two rotors without heads. The tests cut, copy,
 delete and paste these rows with Sections and real input, then save the world
 and read the toolbars, the block references and the Sections block reference
 data from the save. The save is the only place where the game exposes them.
@@ -54,8 +54,9 @@ data from the save. The save is the only place where the game exposes them.
 
 - cutting the targets and pasting them back onto the grid, which restores
   toolbar slots, the remote control's camera, the event controller's
-  selection and the turret controller's rotors and camera, with the rotor
-  heads coming along as subgrids;
+  selection, and the turret controller's toolbar, rotors, camera and tools
+  (without the ids of the cut tools left behind). Restoring a rotor without a
+  head used to crash the game;
 - cutting the owners and pasting them back;
 - the reference data a backup writes (each block's GUID and the GUIDs it
   refers to), that GUIDs survive further backups, and clearing the data with
@@ -92,11 +93,9 @@ The harness levels the character's roll with Q and E before each aim. Upside
 down in space, the camera sits inside the character's body, and the aim ray
 hits the character.
 
-Known defects are expected failures, tied to their tickets:
-`se1/tickets/SE1-0105.md` (crash restoring a turret controller's rotor without
-a head, not run), `SE1-0106.md` (turret controller toolbar and tools) and
-`SE1-0108.md` (Ctrl does not invert Delete). The game itself does not save the
-flight movement block's toolbar, so it is not checked.
+A known defect is an expected failure, tied to its ticket:
+`se1/tickets/SE1-0108.md` (Ctrl does not invert Delete). The game itself does
+not save the flight movement block's toolbar, so it is not checked.
 
 `tests/ds/test_multiplayer.py` joins a client to a vanilla Magnetar server
 over DirectTransport. Sections has no server counterpart yet

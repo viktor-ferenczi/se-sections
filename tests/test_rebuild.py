@@ -23,7 +23,7 @@ def local_blueprints(game) -> Path:
 
 
 def assert_restored(game, grids=None):
-    assert h.without_turret_gaps(refs(game, grids)) == h.without_turret_gaps(EXPECTED)
+    assert refs(game, grids) == EXPECTED
 
 
 # Without Ctrl the 1x2x1 rotor stators stay out of a one block high box
@@ -96,7 +96,7 @@ def test_copy_into_empty_space(game):
 def test_duplicate_on_the_same_grid(game):
     """A second copy of the targets on the same grid gets GUIDs of its own, so
     the owners keep pointing at the originals, and those still restore"""
-    # Without the rotors, whose heads would touch the original ones
+    # Without Ctrl: the rotor stators stay out
     game.copy(*TARGET_ROW)
     game.paste_on((15, 0, -1))
     assert game.exists((15, 1, -1))

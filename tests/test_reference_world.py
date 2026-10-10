@@ -25,16 +25,7 @@ import harness as h
 BLUEPRINT = Path(__file__).with_name("data") / "block-reference-test.sbc"
 
 
-def normalized(refs):
-    """Turret controllers keep stale tools next to the restored ones
-    (se1/tickets/SE1-0106.md); compare the set of valid ones"""
-    for items in refs.values():
-        if "tools" in items:
-            items["tools"] = sorted({t for t in items["tools"] if t})
-    return refs
-
-
-EXPECTED = normalized(h.references(ET.parse(BLUEPRINT).getroot().iter("CubeGrid")))
+EXPECTED = h.references(ET.parse(BLUEPRINT).getroot().iter("CubeGrid"))
 
 
 AROUND = [(0, 0, 1), (-1, 0, 0), (0, 0, -1), (1, 0, 0)]
@@ -53,7 +44,7 @@ def group(api, request):
 
 
 def refs(game):
-    return normalized(h.references(game.saved_grids().values()))
+    return h.references(game.saved_grids().values())
 
 
 def test_group_reads_back(group):

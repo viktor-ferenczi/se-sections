@@ -245,8 +245,10 @@ class Game:
         self, cell, grid: int | None = None, side=(0, 0, 1), distance: float = 7
     ) -> dict:
         """Looks at a block from `distance` metres along a grid axis, +Z by default.
-        A list of axes is tried in turn, for blocks that moving subgrids may hide."""
-        for axis in side if isinstance(side, list) else [side]:
+        A list of axes is tried in turn, for blocks that moving subgrids may hide.
+        Each axis gets two tries: now and then a teleport ends short."""
+        axes = side if isinstance(side, list) else [side]
+        for axis in [a for a in axes for _ in range(2)]:
             target, direction, _ = self.axis(cell, axis, grid)
             eye = [t + distance * d for t, d in zip(target, direction)]
             self.look_from(eye, target)
@@ -439,13 +441,6 @@ class Game:
         ]
         self.grid = self.pasted[0]
         time.sleep(1)
-        if xml:
-            return self.grid
-        # The turret controller binds a rotor through its head's grid; the game
-        # crashes binding one without a head (see test_turret_rotor_without_head)
-        for rotor in ("Azimuth", "Elevation"):
-            api.apply_action(self.grid, TARGETS[rotor][0], "AddRotorTopPart")
-        time.sleep(1)
         return self.grid
 
     def spawn_blueprint(self, path: Path, name: str) -> list[int]:
@@ -475,7 +470,7 @@ class Game:
         raise AssertionError("The clipboard keeps pasting")
 
     def cleanup(self) -> None:
-        """Removes every grid the test made: the ship, its rotor heads, the pastes"""
+        """Removes every grid the test made: the ship, its subgrids, the pastes"""
         for grid in self.api.list_grids():
             if grid["entityId"] not in self.before:
                 self.api.close_grid(grid["entityId"])
@@ -602,18 +597,3 @@ def broken(refs: dict[str, dict]) -> dict[str, list[str]]:
         if bad:
             result[owner] = bad
     return result
-
-
-# Turret controllers: their toolbar is not backed up, and restored tools come on
-# top of the stale ones. The fixture's own tests track that (TURRET_TICKET).
-TURRET_TICKET = "se1/tickets/SE1-0106.md"
-
-
-def without_turret_gaps(refs: dict[str, dict]) -> dict[str, dict]:
-    def gap(items, key):
-        return "azimuth" in items and (key == "tools" or key.startswith("slot"))
-
-    return {
-        owner: {k: v for k, v in items.items() if not gap(items, k)}
-        for owner, items in refs.items()
-    }
