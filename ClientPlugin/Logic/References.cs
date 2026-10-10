@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using VRage.Utils;
 
 namespace ClientPlugin.Logic
 {
@@ -64,8 +66,21 @@ namespace ClientPlugin.Logic
         {
             foreach (var reference in referencesByBlock.Values)
             {
-                reference.Restore(referencesByBlock, referencesByGuid);
-                reference.TerminalBlock.RaisePropertiesChanged();
+                // One block failing to restore must not crash the game
+                try
+                {
+                    reference.Restore(referencesByBlock, referencesByGuid);
+                    reference.TerminalBlock.RaisePropertiesChanged();
+                }
+                catch (Exception e)
+                {
+                    MyLog.Default.Error(
+                        "{0}: Failed to restore the block references of {1}: {2}",
+                        Plugin.Name,
+                        reference.TerminalBlock.DisplayNameText,
+                        e
+                    );
+                }
             }
         }
 

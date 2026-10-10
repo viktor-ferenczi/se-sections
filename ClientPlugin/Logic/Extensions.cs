@@ -136,6 +136,9 @@ namespace ClientPlugin.Logic
                     return b.GetWaypointActionsToolbar();
                 case MyOffensiveCombatBlock b:
                     return b.GetWaypointActionsToolbar();
+                case MyTurretControlBlock b:
+                    // Its public Toolbar property returns null
+                    return (MyToolbar)TurretControlToolbarField.GetValue(b);
             }
 
             return null;
@@ -188,6 +191,65 @@ namespace ClientPlugin.Logic
         public static void RemoveBlocks(this MyEventControllerBlock eventControllerBlock, List<long> toSync)
         {
             RemoveBlocksMethod.Invoke(eventControllerBlock, new[] { toSync });
+        }
+
+        private static readonly FieldInfo TurretControlToolbarField = AccessTools.DeclaredField(
+            typeof(MyTurretControlBlock),
+            "m_toolbar"
+        );
+
+        private static readonly FieldInfo BoundAzimuthSyncField = AccessTools.DeclaredField(
+            typeof(MyTurretControlBlock),
+            "m_boundAzimuth"
+        );
+
+        public static Sync<long, SyncDirection.BothWays> GetBoundAzimuthSync(
+            this MyTurretControlBlock turretControlBlock
+        )
+        {
+            return (Sync<long, SyncDirection.BothWays>)
+                BoundAzimuthSyncField.GetValue(turretControlBlock);
+        }
+
+        private static readonly FieldInfo BoundElevationSyncField = AccessTools.DeclaredField(
+            typeof(MyTurretControlBlock),
+            "m_boundElevation"
+        );
+
+        public static Sync<long, SyncDirection.BothWays> GetBoundElevationSync(
+            this MyTurretControlBlock turretControlBlock
+        )
+        {
+            return (Sync<long, SyncDirection.BothWays>)
+                BoundElevationSyncField.GetValue(turretControlBlock);
+        }
+
+        private static readonly FieldInfo BoundToolsField = AccessTools.DeclaredField(
+            typeof(MyTurretControlBlock),
+            "m_boundTools"
+        );
+
+        // Keys are the bound tool ids, including those of removed tools, which have null values
+        public static Dictionary<long, MyFunctionalBlock> GetBoundTools(
+            this MyTurretControlBlock turretControlBlock
+        )
+        {
+            return (Dictionary<long, MyFunctionalBlock>)
+                BoundToolsField.GetValue(turretControlBlock);
+        }
+
+        private static readonly MethodInfo SyncToolUnselectionMethod = AccessTools.DeclaredMethod(
+            typeof(MyTurretControlBlock),
+            "SyncToolUnselection"
+        );
+
+        // Unlike RemoveTools, this can remove the ids of tools which are gone
+        public static void RemoveToolIds(
+            this MyTurretControlBlock turretControlBlock,
+            List<long> toSync
+        )
+        {
+            SyncToolUnselectionMethod.Invoke(turretControlBlock, new object[] { toSync });
         }
 
         private static readonly MethodInfo RecalcBoundsMethod = AccessTools.DeclaredMethod(typeof(MyCubeGrid), "RecalcBounds");
