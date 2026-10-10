@@ -492,7 +492,7 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            if (Cfg.SaveSelectedBlocks.IsPressed(input) && CanEditSections())
+            if (Cfg.SaveSelectedBlocks.IsPressedIgnoringCtrl(input) && CanEditSections())
             {
                 SaveToBlueprintFile((Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()));
                 return true;
@@ -504,7 +504,7 @@ namespace ClientPlugin.Logic
                 return true;
             }
 
-            if (Cfg.DeleteSelectedBlocks.IsPressed(input) && CanEditSections())
+            if (Cfg.DeleteSelectedBlocks.IsPressedIgnoringCtrl(input) && CanEditSections())
             {
                 var includeIntersectingBlocks = (
                     Cfg.IncludeIntersectingBlocks ^ input.IsAnyCtrlKeyPressed()

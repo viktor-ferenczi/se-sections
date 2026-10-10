@@ -93,9 +93,8 @@ The harness levels the character's roll with Q and E before each aim. Upside
 down in space, the camera sits inside the character's body, and the aim ray
 hits the character.
 
-A known defect is an expected failure, tied to its ticket:
-`se1/tickets/SE1-0108.md` (Ctrl does not invert Delete). The game itself does
-not save the flight movement block's toolbar, so it is not checked.
+The game itself does not save the flight movement block's toolbar, so it is
+not checked.
 
 `tests/ds/test_multiplayer.py` joins a client to a vanilla Magnetar server
 over DirectTransport. Sections has no server counterpart yet
