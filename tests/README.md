@@ -71,6 +71,11 @@ also deletes a section after saving it as a blueprint, loads the blueprint
 through the Blueprints screen (F10, Copy to clipboard) and pastes it back,
 which restores the references from the data in the file.
 
+`test_detector_blocks.py` uses a timer, a sensor and a camera as the first and
+the second corner of a selection and cuts the row between them. Sensors and
+cameras have no physics, so the aim ray hits the floor under them; the floor
+must stay.
+
 `test_reference_world.py` uses a mechanical group of six grids from Viktor's
 manual test world: a static large grid (LG), a small grid (SG) on its
 advanced rotor, and two hinge arms with solar grids on SG.
