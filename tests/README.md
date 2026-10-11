@@ -76,6 +76,11 @@ the second corner of a selection and cuts the row between them. Sensors and
 cameras have no physics, so the aim ray hits the floor under them; the floor
 must stay.
 
+`test_restore_off.py` turns the "Restore toolbars" setting off. Cutting the
+targets and pasting them back then leaves the references broken, and no block
+gets reference data. A test module that sets `SECTIONS_SETTINGS` restarts the
+client with those settings, so this module runs on a client of its own.
+
 `test_reference_world.py` uses a mechanical group of six grids from Viktor's
 manual test world: a static large grid (LG), a small grid (SG) on its
 advanced rotor, and two hinge arms with solar grids on SG.

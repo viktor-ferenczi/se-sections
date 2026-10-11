@@ -642,7 +642,7 @@ namespace ClientPlugin.Logic
 
         private void Copy(bool includeIntersectingBlocks)
         {
-            new References(grid).Backup();
+            BackupReferences();
 
             var gridBuilders = CreateGridBuilders(
                 includeIntersectingBlocks,
@@ -657,7 +657,7 @@ namespace ClientPlugin.Logic
 
         private void Cut(bool includeIntersectingBlocks)
         {
-            new References(grid).Backup();
+            BackupReferences();
 
             var gridBuilders = CreateGridBuilders(
                 includeIntersectingBlocks,
@@ -674,7 +674,7 @@ namespace ClientPlugin.Logic
 
         private void Delete(bool includeIntersectingBlocks)
         {
-            new References(grid).Backup();
+            BackupReferences();
 
             var gridBuilders = CreateGridBuilders(
                 includeIntersectingBlocks,
@@ -686,6 +686,12 @@ namespace ClientPlugin.Logic
 
             DeleteBlocks(blockMinPositions);
             DeleteGrids(subgrids);
+        }
+
+        private void BackupReferences()
+        {
+            if (Cfg.RestoreToolbars)
+                new References(grid).Backup();
         }
 
         private MySlimBlock GetAimedBlock(MyCubeGrid requiredGrid = null)
@@ -1028,7 +1034,7 @@ namespace ClientPlugin.Logic
 
         private void SaveToBlueprintFile(bool includeIntersectingBlocks)
         {
-            new References(grid).Backup();
+            BackupReferences();
 
             var gridBuilders = CreateGridBuilders(
                 includeIntersectingBlocks,
@@ -1357,6 +1363,9 @@ namespace ClientPlugin.Logic
             var grids = new HashSet<MyCubeGrid>();
             while (BlockReferenceRestoreQueue.Count != 0)
                 grids.Add(BlockReferenceRestoreQueue.Dequeue());
+
+            if (!Cfg.RestoreToolbars)
+                return;
 
             foreach (var grid in grids)
                 new References(grid).Restore();
