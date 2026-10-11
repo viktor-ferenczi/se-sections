@@ -71,7 +71,7 @@ also deletes a section after saving it as a blueprint, loads the blueprint
 through the Blueprints screen (F10, Copy to clipboard) and pastes it back,
 which restores the references from the data in the file.
 
-`test_detector_blocks.py` uses a timer, a sensor and a camera as the first and
+`test_corner_blocks.py` uses a timer, a sensor and a camera as the first and
 the second corner of a selection and cuts the row between them. Sensors and
 cameras have no physics, so the aim ray hits the floor under them; the floor
 must stay.
