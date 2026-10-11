@@ -35,6 +35,15 @@ Section editing works in creative mode, or in survival with creative tools
 enabled. Multiplayer section editing runs on the host. Cutaways can also run on
 multiplayer clients under the permissions described below.
 
+### New in 1.4.2
+
+Aiming at a sensor or a camera now selects it as the corner block. Before, the
+selection went through it and picked the block it was mounted on.
+
+The **Restore toolbars** setting now works. When it is off, copy, cut and
+delete don't back up the block references, and a paste doesn't restore them.
+It stays on by default.
+
 ### New in 1.4.1
 
 Ctrl now inverts **Include intersecting blocks** for **Backspace** (delete) and
