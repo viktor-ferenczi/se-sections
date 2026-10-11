@@ -82,6 +82,10 @@ targets and pasting them back then leaves the references broken, and no block
 gets reference data. A test module that sets `SECTIONS_SETTINGS` restarts the
 client with those settings, so this module runs on a client of its own.
 
+`test_power_state.py` switches the timer off, cuts the row from the timer to
+the event controller and pastes it back. The timer must stay off, and the
+sensor and the event controller on and working.
+
 `test_reference_world.py` uses a mechanical group of six grids from Viktor's
 manual test world: a static large grid (LG), a small grid (SG) on its
 advanced rotor, and two hinge arms with solar grids on SG.
