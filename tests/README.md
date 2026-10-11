@@ -39,7 +39,8 @@ The run starts a client, loads a fresh copy of the Remote suite's space world
 (creative, copy and paste on) and stops the client at the end.
 `SECTIONS_KEEP=1` leaves it running, and `SECTIONS_ATTACH=1` runs the tests
 on a client that is already running, for example one started with
-`python tests/rig.py start --render`.
+`python tests/rig.py start --render`. It skips the test modules that need
+other Sections settings.
 
 Each test pastes its own fixture ship (`harness.py`). Ten blocks that refer
 to other blocks stand in one row: timer, cockpit, sensor, button panel, event

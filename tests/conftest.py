@@ -3,8 +3,9 @@ world. Sections draws its selection, which crashes a --no-render client. A test
 module that needs other Sections settings sets SECTIONS_SETTINGS, and the client
 restarts with them.
 
-SECTIONS_ATTACH=1 uses a client that is already running (rig.py start), and
-SECTIONS_KEEP=1 leaves the client running after the run.
+SECTIONS_ATTACH=1 uses a client that is already running (rig.py start) and
+skips the modules that set SECTIONS_SETTINGS. SECTIONS_KEEP=1 leaves the client
+running after the run.
 """
 
 from __future__ import annotations
