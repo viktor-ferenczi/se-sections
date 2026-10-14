@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
-using VRage.Utils;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public class References
     {
@@ -74,11 +73,8 @@ namespace ClientPlugin.Logic
                 }
                 catch (Exception e)
                 {
-                    MyLog.Default.Error(
-                        "{0}: Failed to restore the block references of {1}: {2}",
-                        Plugin.Name,
-                        reference.TerminalBlock.DisplayNameText,
-                        e
+                    Log.Error(
+                        $"Failed to restore the block references of {reference.TerminalBlock.DisplayNameText}: {e}"
                     );
                 }
             }

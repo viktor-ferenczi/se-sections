@@ -32,8 +32,19 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 - [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
 Section editing works in creative mode, or in survival with creative tools
-enabled. Multiplayer section editing runs on the host. Cutaways can also run on
-multiplayer clients under the permissions described below.
+enabled. Multiplayer section editing runs on the host, or on a dedicated server
+that runs the [Sections server companion](#dedicated-servers). Cutaways can also
+run on multiplayer clients under the permissions described below.
+
+### New in 1.5.0
+
+Section editing and cutaways on dedicated servers. A server running the
+**Sections** companion from MagnetarHub carries out cut, copy, delete and section
+blueprints for its players, and restores block references when they paste.
+Blocks a player hides with cutaways or auto-hide lose collision for that
+player's character only; everyone else still sees and bumps into them. Admins
+only by default, see [Dedicated servers](#dedicated-servers). On a server
+without the companion nothing changes.
 
 ### New in 1.4.2
 
@@ -164,7 +175,8 @@ their collision is disabled so the character can fly through them. Multiplayer
 hiding changes visuals only, except when the plugin runs on the host of a
 **Friends** session, where collision removal is also enabled. On that host,
 physics changes affect the server simulation; other players still keep their
-normal view. **Hidden block opacity**
+normal view. On a dedicated server running the companion, players it allows
+lose collision with their hidden blocks, but only for their own character. **Hidden block opacity**
 defaults to **25%**; zero makes them invisible. **Hidden block saturation**
 defaults to **50%**; zero makes their displayed color gray. These settings change
 rendering without changing the saved block colors.
@@ -190,7 +202,10 @@ described below.
 In multiplayer, cutaways require creative mode or admin rights. Non-admin
 players can apply them only to grids they own; admins can apply them to any grid.
 Each client keeps its own mask, so other players keep their normal view. In
-offline survival, creative tools or admin rights are required.
+offline survival, creative tools or admin rights are required. On a dedicated
+server running the companion, the server decides who may remove collision and
+on which grids; players it does not allow keep the visual-only cutaways under
+the rules above.
 
 ### Auto-hide blocks
 
@@ -385,9 +400,57 @@ keep their values.
 - **No support for symmetry mode.** This is planned for version 1.4.0.
 - Pasting sections with disconnected blocks works as expected, but may result in "floating" blocks. This is normal and by design to allow for some building tricks. **Play with it!**
 - Survival testing has used creative tools. Multiplayer section editing requires
-  the plugin on the host. Cutaways and auto-hide can run on permitted clients,
-  but remove collision only in single-player or on a Friends session's host.
-  Real multiplayer integration still needs testing with multiple clients.
+  the plugin on the host, or the companion on a dedicated server. Without the
+  companion, cutaways and auto-hide on clients are visual only.
+- On a dedicated server, removed collision applies to the player's character.
+  A ship the player pilots still collides with its hidden blocks on the
+  server, so do not fly a ship with hidden blocks into anything.
+
+## Dedicated servers
+
+Install the **Sections** server plugin from MagnetarHub in Magnetar. Players
+also need the Sections client plugin from PluginHub. The client says hello to
+the server when it joins; without an answer it keeps working as before.
+
+With the companion:
+
+- **Cut, copy, delete and section blueprints** run on the server, on the
+  server's own copy of the grid. Copies and blueprints come back to the
+  player's clipboard or blueprint folder. Pasting stays the game's own paste,
+  which needs copy and paste rights as always, and the server restores the
+  block references of what is pasted.
+- **Cutaways and auto-hide** remove collision for the player who hid the
+  blocks: only that player's character passes through them. The look of
+  hidden blocks stays on the player's screen, other players see nothing change.
+  Grid shapes on the server never change, so ships, other characters and
+  physics are not affected.
+- The server checks every request itself: the player's game access level, the
+  game's copy and paste right for editing (creative world or creative tools),
+  and that the player owns the grid. When a player loses a right or leaves, the
+  server drops their removed collision, and the client restores the blocks.
+
+Settings are in `Sections.cfg` in the instance folder, and in Quasar's plugin
+settings:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `EditAccessLevel` | `Admin` | Lowest game access level allowed to copy, cut, delete and blueprint sections |
+| `CutawayAccessLevel` | `Admin` | Lowest game access level allowed to remove collision with cutaways and auto-hide |
+| `CutawayNeedsCreative` | `true` | Removing collision also needs a creative world or creative tools |
+| `AnyGridAccessLevel` | `Admin` | Lowest game access level allowed to use grids the player does not own |
+| `MaxHiddenBlocksPerPlayer` | `100000` | Most blocks a player may have without collision |
+| `DebugStatusFile` | `false` | Writes `Sections/status-players.json` every second, for tests |
+
+The access levels are the game's: `None`, `Scripter`, `Moderator`, `SpaceMaster`,
+`Admin` and `Owner`. For example, this lets every player of a creative server
+remove collision on their own grids, while editing stays with the admins:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<SectionsServerConfig>
+  <CutawayAccessLevel>None</CutawayAccessLevel>
+</SectionsServerConfig>
+```
 
 ## Troubleshooting
 
@@ -399,8 +462,15 @@ on GitHub or report the issue in the `#bug-reports` channel of the [SE Mods Disc
 Load the working copy through a Pulsar development folder: start Pulsar with `-sources`,
 then add this repository with the Sources button. Building `Sections.sln` deploys the
 plugin into Pulsar's `Local` folder only if `Pulsar` is set in `Directory.Build.props.user`
-or passed as `-p:Pulsar=...`. If the build cannot find the game, run `setup.py` to write its
-folder into `Directory.Build.props.user`.
+or passed as `-p:Pulsar=...`. If the build cannot find the game or the dedicated server, run `setup.py` to write
+their folders into `Directory.Build.props.user`.
+
+The server companion is `ServerPlugin`, with `SectionsServer.xml` as its MagnetarHub
+manifest. Code both plugins compile is in `Shared`. Building `ServerPlugin` needs the
+dedicated server (`Dedicated64`) and Magnetar's `PluginSdk.dll` (`Magnetar`); it deploys
+into Magnetar's `Local` folder only if `MagnetarData` is set. For testing, load it
+through a Magnetar dev folder instead, as `tests/ds` does. The client and the server
+talk through mod messages on channel 48772, see `Shared/Companion/Protocol.cs`.
 
 ## Legal
 

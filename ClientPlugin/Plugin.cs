@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using ClientPlugin.Companion;
 using ClientPlugin.Logic;
 using ClientPlugin.Patches;
 using ClientPlugin.Settings;
@@ -7,6 +8,7 @@ using ClientPlugin.Settings.Layouts;
 using HarmonyLib;
 using Sandbox.Game.World;
 using Sandbox.Graphics.GUI;
+using Shared.Logic;
 using VRage.Plugins;
 
 namespace ClientPlugin
@@ -51,6 +53,7 @@ namespace ClientPlugin
 
         private void OnUnloadingSession()
         {
+            CompanionClient.Stop();
             Cutaway.Restore(force: true);
             Logic.Logic.Static.Reset();
         }
@@ -59,6 +62,7 @@ namespace ClientPlugin
         {
             Cutaway.Update();
             Logic.Logic.Static?.Update();
+            CompanionClient.Update();
         }
 
         // ReSharper disable once UnusedMember.Global

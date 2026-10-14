@@ -4,7 +4,7 @@ using System.Text;
 using Sandbox.Game.Entities.Cube;
 using Group = System.Collections.Generic.Dictionary<string, string>;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public class DataStorage
     {

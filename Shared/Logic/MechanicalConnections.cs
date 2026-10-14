@@ -5,7 +5,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public class MechanicalConnections
     {

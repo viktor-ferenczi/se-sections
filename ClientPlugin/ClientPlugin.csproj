@@ -308,4 +308,5 @@
     <Message Condition="'$(PluginDirectory)' != ''" Importance="high"
              Text="Deployed the $(TargetFramework) build to &quot;$(PluginDirectory)&quot;" />
   </Target>
+  <Import Project="..\Shared\Shared.projitems" Label="Shared" />
 </Project>
