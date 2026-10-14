@@ -88,6 +88,8 @@ public static class Companion
         new Dictionary<long, ServedPlayer>();
 
     private static readonly RequestLimiter limiter = new RequestLimiter(60, 30);
+    private static readonly Dictionary<ulong, DateTime> limitedUtc =
+        new Dictionary<ulong, DateTime>();
     private static readonly List<(MyCubeGrid Grid, ulong Paster)> pasted =
         new List<(MyCubeGrid, ulong)>();
 
@@ -108,6 +110,7 @@ public static class Companion
         served.Clear();
         byCharacter = new Dictionary<long, ServedPlayer>();
         limiter.Clear();
+        limitedUtc.Clear();
         pasted.Clear();
         lastStatus = null;
 
@@ -284,6 +287,7 @@ public static class Companion
 
     private static void OnClientLeft(ulong steamId, MyChatMemberStateChangeEnum _)
     {
+        limitedUtc.Remove(steamId);
         if (!served.Remove(steamId))
             return;
         UpdateCharacters();
@@ -308,8 +312,14 @@ public static class Companion
         try
         {
             var reader = Protocol.Read(message, out var type);
-            if (!limiter.Take(sender, Cost(type), DateTime.UtcNow))
+            var now = DateTime.UtcNow;
+            if (!limiter.Take(sender, Cost(type), now))
             {
+                // Once a second at most, a burst must not turn into a burst of answers
+                if (limitedUtc.TryGetValue(sender, out var told) && (now - told).TotalSeconds < 1)
+                    return;
+                limitedUtc[sender] = now;
+
                 Log.Warning($"Dropped a {type} message from {sender}: too many requests");
                 if (type == MessageType.Hide && served.TryGetValue(sender, out var limited))
                 {
@@ -536,7 +546,9 @@ public static class Companion
         if (!CanAccess(player, grid))
         {
             player.RemoveGrid(grid);
-            Revoke(player, gridId, "you don't own this grid");
+            // A client showing blocks after a revoke needs no second one
+            if (hide)
+                Revoke(player, gridId, "you don't own this grid");
             return;
         }
 

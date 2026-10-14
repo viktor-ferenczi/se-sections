@@ -134,10 +134,14 @@ chat command and read from the server's folder.
   wall, the server's copy of her character ends up behind it, and Bob is
   stopped. Hidden blocks keep working, auto-hide and show-all reach the server,
   Bob may hide his own grid but not Alice's, and the server forgets Alice when
-  she leaves.
+  she leaves. The server paths: a cut that takes five subgrids along (the
+  reference group of `test_reference_world.py`), clearing the reference data,
+  a grid split, an ownership change (Alice takes Bob's battery, with the use
+  terminals admin setting) and a burst of messages over the rate limit.
 - `test_companion_survival.py`: the default access levels in a survival world.
   Only the admin is granted, and turning creative tools off gives her
-  collision back.
+  collision back. Also the hidden block limit (4 here), the blueprint name
+  dialog, and a client speaking another protocol version.
 
 A paste onto a side face of a dynamic small grid makes a new grid instead of
 merging, so the SG tests paste onto top faces.

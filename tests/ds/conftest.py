@@ -6,6 +6,7 @@ Each test module gets a fresh server. Module attributes choose what it runs:
   working copy (SectionsServer.xml). False is a vanilla server.
 - SERVER_CONFIG: overrides for the companion's Sections.cfg.
 - WORLD: overrides for the world settings, like {"GameMode": "Survival"}.
+- CLIENT_SETTINGS: Sections settings of Alice's client, on top of the rig's.
 
 Client 1 of the slot joins as Alice, an admin with creative tools on. Client 2
 joins as Bob, a space master (the test rig teleports him), only for the tests
@@ -68,6 +69,12 @@ class ServedGame(harness.Game):
                 except ET.ParseError:
                     pass
 
+    def saved_grids(self, root: ET.Element | None = None) -> dict[int, ET.Element]:
+        """Only the grids this client sees: the server's save also has grids
+        that never reached the client, so they are missing from `before`"""
+        visible = {g["entityId"] for g in self.api.list_grids()}
+        return {k: v for k, v in super().saved_grids(root).items() if k in visible}
+
     def status(self) -> dict:
         """What the server's companion keeps for this player"""
         return rig.server_status(self.server).get(self.client.client_id, {})
@@ -102,8 +109,14 @@ def server(request):
 
 
 @pytest.fixture(scope="module")
-def api(server):
-    api = rig.join(rig.client(1), server, ALICE, render=True)
+def api(server, request):
+    api = rig.join(
+        rig.client(1),
+        server,
+        ALICE,
+        render=True,
+        sections=_module_option(request, "CLIENT_SETTINGS", None),
+    )
     api.set_admin_flag("creativeTools", True)
     return api
 

@@ -9,8 +9,12 @@ SECTIONS_SLOT=<n> uv run pytest tests/ds/test_companion.py
 """
 
 import time
+from concurrent.futures import ThreadPoolExecutor
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import pytest
+from se_remote import SetOp
 
 import harness as h
 import rig
@@ -29,6 +33,7 @@ from companion import (
     hide_message,
     hits,
     log_has,
+    log_has_server,
     wait_until,
     wall,
 )
@@ -268,6 +273,136 @@ def test_bob_hides_his_own_grid_but_not_alices(wall_game, bob):
     assert not hidden_cells(bob, alices)
     bob.press("H", ["LeftControl", "LeftShift"])
     bob.cleanup()
+
+
+# --- server paths: subgrids, reference data, split, ownership, rate limit ---------
+
+GROUP = Path(__file__).resolve().parent.parent / "data" / "block-reference-test.sbc"
+
+
+def test_cut_takes_orphaned_subgrids_along(api, server, request):
+    """The large grid's advanced rotor takes the small grid and its hinge arms
+    and solar grids along (tests/test_reference_world.py, offline), here on the
+    server; pasted back, the whole group refers to itself as before."""
+    expected = h.references(ET.parse(GROUP).getroot().iter("CubeGrid"))
+    game = ServedGame(api, server, rig.client(1))
+    grids = game.spawn_blueprint(GROUP, f"Sections {request.node.name}"[:60])
+    try:
+        assert len(grids) == 6
+        lg = {api.get_grid(g)["name"]: g for g in grids}["Block Reference Test"]
+        assert h.references(game.saved_grids().values()) == expected
+
+        game.cut_block((3, 1, 3), lg, side=(0, 0, -1))
+        wait_until(
+            lambda: {g["entityId"] for g in api.list_grids()} & set(grids) == {lg},
+            "the cut to take the five subgrids along",
+            60,
+        )
+        assert log_has_server(server, "blocks and 5 subgrids")
+
+        game.paste_on((3, 0, 3), lg, alt=True)
+        wait_until(lambda: game.exists((3, 1, 3), lg), "the paste back")
+        assert h.references(game.saved_grids().values()) == expected
+    finally:
+        game.leave_screens()
+        game.cleanup()
+
+
+def test_clear_reference_data(game):
+    """A copy backs the references up on the server; Minus, after its
+    confirmation, clears them there"""
+    game.copy(*TARGET_ROW)
+    game.leave_screens()
+    assert all(h.storage(b) for b in h.blocks(game.saved_grids().values()).values())
+
+    game.aim(OWNER_ROW[1])
+    game.press("NumPad0")
+    game.press("OemMinus")
+    screen = game.api.get_focused_screen()
+    assert "MessageBox" in screen["type"], screen
+    game.api.control_click(text="Yes")
+    game.leave_screens()
+    wait_until(
+        lambda: log_has_server(game.server, "cleared the block reference data"),
+        "the server to clear it",
+    )
+    assert not any(h.storage(b) for b in h.blocks(game.saved_grids().values()).values())
+
+
+def test_split_drops_the_blocks_moved_away(wall_game):
+    """Deleting the wall's last column splits the battery column off. Its hidden
+    blocks belong to another grid now; the server lets go of them."""
+    game = wall_game
+    hide_doorway(game)
+    game.select(WALL_BATTERY, WALL_ABOVE_LIGHT)
+    game.press("H")
+    game.press("Escape")
+    wait_until(
+        lambda: hidden_cells(game, game.grid)
+        == DOORWAY_CELLS | {WALL_BATTERY, WALL_LIGHT, WALL_ABOVE_LIGHT},
+        "the server to know all hidden blocks",
+    )
+    game.delete((4, 0, 0), (4, 4, 0))
+    wait_until(
+        lambda: hidden_cells(game, game.grid) == DOORWAY_CELLS,
+        "the server to drop the blocks split off",
+    )
+    assert not hits(game, (2, 2, 0)), "The doorway got its collision back"
+
+
+def test_ownership_change_revokes_bob(game, bob):
+    """Bob hides blocks of his own wall; once Alice owns its functional blocks it
+    is no longer his, and the server lets go of the hidden blocks"""
+    own = bob.spawn("Bob's wall", wall("Bob's wall"))
+    hide_doorway(bob)
+    api = game.api
+    api.character_teleport(bob.origin[0], bob.origin[1] + 10, bob.origin[2] + 30)
+    wait_until(
+        lambda: any(g["entityId"] == own for g in api.list_grids()),
+        "Bob's wall on Alice's client",
+    )
+    # The battery is the wall's only owned block. An admin's ownership change
+    # goes through at once only with the use terminals admin setting on.
+    api.set_admin_flag("useTerminals", True)
+    try:
+        api.batch(
+            sets=[SetOp.owner(own, WALL_BATTERY, steam_id=rig.client(1).client_id)]
+        ).set(0)
+        wait_until(
+            lambda: not hidden_cells(bob, own), "the server to drop Bob's blocks"
+        )
+    finally:
+        api.set_admin_flag("useTerminals", False)
+    # Bob's client notices the new owner too and shows the blocks itself; when
+    # the server is first, it revokes them. Either way Bob collides again.
+    wait_until(lambda: hits(bob, (2, 2, 0)), "Bob's collision back")
+    bob.cleanup()
+
+
+def test_rate_limit_revokes_everything(wall_game):
+    """A burst of hide messages over the limit: the server drops what the
+    player hid, once, and tells the client to show everything"""
+    game = wall_game
+    hide_doorway(game)
+    empty = hide_message(game.grid, [])
+    # In parallel: one request at a time stays within the refill rate
+    with ThreadPoolExecutor(32) as pool:
+        list(pool.map(lambda _: game.api.send_mod_message(CHANNEL, empty), range(600)))
+    wait_until(lambda: not hidden_cells(game, game.grid), "the server to drop them")
+    wait_until(
+        lambda: log_has(
+            rig.client(1),
+            "The server restored the blocks of all grids: too many requests",
+        ),
+        "the revoke on the client",
+    )
+    revokes = (
+        rig.client(1)
+        .log.read_text(errors="replace")
+        .count("The server restored the blocks of all grids: too many requests")
+    )
+    assert revokes <= 10, revokes
+    wait_until(lambda: hits(game, (2, 2, 0)), "collision back on the client")
 
 
 def test_cleanup_when_alice_leaves(api, server):

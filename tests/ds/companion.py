@@ -70,6 +70,10 @@ def log_has(client: rig.Client, text: str) -> bool:
     return text in client.log.read_text(errors="replace")
 
 
+def log_has_server(server: rig.Server, text: str) -> bool:
+    return text in server.log.read_text(errors="replace")
+
+
 # --- raw messages, as a modified client could send them -----------------------
 
 
