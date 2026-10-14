@@ -16,7 +16,7 @@ using VRage.ObjectBuilder;
 using Group = System.Collections.Generic.Dictionary<string, string>;
 using IngameIMyFunctionalBlock =  Sandbox.ModAPI.Ingame.IMyFunctionalBlock;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public abstract class Reference : DataStorage
     {

@@ -15,7 +15,7 @@ using VRage.ObjectBuilder;
 using VRage.Sync;
 using VRageMath;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public static class Extensions
     {

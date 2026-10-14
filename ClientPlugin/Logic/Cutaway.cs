@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using ClientPlugin.Companion;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.GUI;
@@ -22,16 +23,24 @@ namespace ClientPlugin.Logic
 
         public static bool IsHidden(MySlimBlock block) => Hidden.ContainsKey(block);
 
+        // Offline, on a Friends host, or where the server's companion removes collision
+        // for this player
         public static bool CanDisablePhysics =>
             MySession.Static != null
-            && CutawayPhysics.IsAllowed(
-                Sync.MultiplayerActive,
-                Sync.IsServer,
-                MySession.Static.OnlineMode == MyOnlineModeEnum.FRIENDS
+            && (
+                CutawayPhysics.IsAllowed(
+                    Sync.MultiplayerActive,
+                    Sync.IsServer,
+                    MySession.Static.OnlineMode == MyOnlineModeEnum.FRIENDS
+                ) || CompanionClient.CanHideCollision
             );
 
         public static bool IsCollisionHidden(MySlimBlock block) =>
             CanDisablePhysics && IsHidden(block);
+
+        // What the server companion needs again after it starts serving this client
+        public static List<MySlimBlock> CollisionHiddenBlocks() =>
+            Hidden.Where(entry => entry.Value.DisablePhysics).Select(entry => entry.Key).ToList();
 
         public static Vector3 HiddenColor(MySlimBlock block)
         {
@@ -246,6 +255,8 @@ namespace ClientPlugin.Logic
             state.CaptureEntity(block.FatBlock);
             if (!Hidden.TryAdd(block, state))
                 return false;
+            if (state.DisablePhysics)
+                CompanionClient.QueueHide(block, true);
             block.Dithering = Config.Current.HiddenBlockOpacity / 100f - 1f;
             block.UpdateVisual(false);
             RefreshVisual(block);
@@ -258,7 +269,12 @@ namespace ClientPlugin.Logic
             MySession.Static != null
             && MySession.Static.Ready
             && !MySession.Static.IsUnloading
-            && (
+            && (CompanionClient.CanHideCollision || IsAllowedVisually);
+
+        // The rule without the server companion, and for the players it does not grant
+        // collision removal: visual only in multiplayer
+        private static bool IsAllowedVisually =>
+            (
                 !Sandbox.Game.Multiplayer.Sync.MultiplayerActive
                 || MySession.Static.CreativeMode
                 || MySession.Static.IsUserAdmin(Sandbox.Game.Multiplayer.Sync.MyId)
@@ -273,8 +289,10 @@ namespace ClientPlugin.Logic
             IsAllowed
             && grid != null
             && (
-                MySession.Static.IsUserAdmin(Sandbox.Game.Multiplayer.Sync.MyId)
-                || grid.BigOwners.Contains(MySession.Static.LocalPlayerId)
+                CompanionClient.CanHideCollision
+                    ? CompanionClient.CanHideCollisionOn(grid)
+                    : MySession.Static.IsUserAdmin(Sandbox.Game.Multiplayer.Sync.MyId)
+                        || grid.BigOwners.Contains(MySession.Static.LocalPlayerId)
             );
 
         public static int Restore(
@@ -317,6 +335,8 @@ namespace ClientPlugin.Logic
             if (!Hidden.TryRemove(block, out var state))
                 return false;
             state.Restore();
+            if (state.DisablePhysics)
+                CompanionClient.QueueHide(block, false);
             var owner = block.CubeGrid;
             if (
                 owner == null

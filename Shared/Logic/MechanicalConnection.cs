@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public readonly struct MechanicalConnection
     {

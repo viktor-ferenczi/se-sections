@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+    <Id>68087F7C-806F-44B3-9B73-F1969DA51AB3</Id>
+    <RepoId>viktor-ferenczi/se-sections</RepoId>
+
+    <FriendlyName>Sections</FriendlyName>
+    <Author>Viktor</Author>
+
+    <Tooltip>Server companion of the Sections client plugin: section editing and cutaways for the players of a dedicated server.</Tooltip>
+    <Description>
+        Section editing and cutaways for the players of a dedicated server.
+
+        Players need the Sections client plugin from PluginHub. With this
+        companion they can copy, cut, delete and blueprint grid sections on the
+        server, and blocks they hide with cutaways or auto-hide lose collision
+        for their own character only. Other players keep seeing and bumping
+        into those blocks. Clients only send requests; every check runs on the
+        server.
+
+        Admins only by default. The access levels for editing, for removing
+        collision and for using other players' grids are in Sections.cfg in the
+        instance folder.
+
+        Please see the full documentation on GitHub:
+        https://github.com/viktor-ferenczi/se-sections
+
+        Bug reporting channel: #bug-reports
+        SE Mods Discord https://discord.gg/PYPFPGf3Ca
+    </Description>
+
+    <SourceDirectories>
+        <Directory>ServerPlugin</Directory>
+        <Directory>Shared</Directory>
+    </SourceDirectories>
+
+    <Commit>TODO</Commit>
+
+</PluginData>

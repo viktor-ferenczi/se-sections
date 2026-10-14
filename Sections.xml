@@ -27,6 +27,7 @@ Enjoy!
   
   <SourceDirectories>
     <Directory>ClientPlugin</Directory>
+    <Directory>Shared</Directory>
   </SourceDirectories>
 
 </PluginData>

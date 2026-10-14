@@ -9,7 +9,7 @@ using VRage.Game.Definitions;
 using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.ObjectBuilders;
 
-namespace ClientPlugin.Logic
+namespace Shared.Logic
 {
     public static class ModStorage
     {

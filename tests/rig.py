@@ -24,6 +24,7 @@ From the command line, to run the older script checks by hand:
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -40,13 +41,15 @@ HOME = Path.home()
 REPO = Path(__file__).resolve().parent.parent
 PLUGINS = REPO.parent
 REMOTE_REPO = PLUGINS / "remote"
-WORKSPACE = REPO.parents[2]
+# A worktree outside the workspace names it with SE_WORKSPACE
+WORKSPACE = Path(os.environ.get("SE_WORKSPACE", REPO.parents[2]))
 PARALLEL = WORKSPACE / "notes" / "parallel-test-work"
 
 sys.path.insert(0, str(REMOTE_REPO / "skills" / "se-remote"))
 from se_remote import RemoteAPI  # noqa: E402
 
 SECTIONS_ID = "viktor-ferenczi/se-sections"
+SERVER_ID = ET.parse(REPO / "SectionsServer.xml").getroot().findtext("Id")
 PULSAR_TEMPLATE = Path(
     os.environ.get("SECTIONS_PULSAR_TEMPLATE", HOME / ".config/Pulsar")
 )
@@ -174,7 +177,10 @@ def remote_url() -> str:
 
 
 def connect(c: Client | None = None) -> RemoteAPI:
-    return RemoteAPI((c or client(0)).url, username="admin", password="SpaceEngineers")
+    # A paste or a flight on a server client takes longer than Remote's default 10 s
+    return RemoteAPI(
+        (c or client(0)).url, username="admin", password="SpaceEngineers", timeout=60
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -497,7 +503,7 @@ def start_offline(
 
 
 # ---------------------------------------------------------------------------
-# Dedicated server: Magnetar with DirectTransport, no Sections counterpart (SE1-0068)
+# Dedicated server: Magnetar with DirectTransport, with or without the companion
 # ---------------------------------------------------------------------------
 
 MAGNETAR = Path(os.environ.get("SECTIONS_MAGNETAR_DIR", HOME / ".config/Magnetar"))
@@ -508,20 +514,70 @@ DS64 = Path(
         / ".steam/debian-installation/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64",
     )
 )
+ERROR_REPORTING = WORKSPACE / "se1" / "plugins" / "error-reporting"
 DS_CONFIG_TEMPLATE = (
     HOME / ".config/SpaceEngineersDedicated/SpaceEngineers-Dedicated.cfg"
 )
 
 
-def prepare_server(s: Server, admins=()) -> None:
+def prepare_server(
+    s: Server,
+    admins=(),
+    companion: bool = False,
+    config: dict | None = None,
+    world: dict | None = None,
+    promoted: dict | None = None,
+) -> None:
+    """The companion is compiled from this working copy (SectionsServer.xml as a
+    dev folder). `config` overrides its Sections.cfg, `world` the world settings.
+    `promoted` gives players a game access level, like {steam_id: "SpaceMaster"}."""
     prepare_world(s.world, online="PUBLIC")
+    if promoted:
+        checkpoint = s.world / "Sandbox.sbc"
+        items = "".join(
+            f"<item><Key>{k}</Key><Value>{v}</Value></item>"
+            for k, v in promoted.items()
+        )
+        checkpoint.write_text(
+            checkpoint.read_text(encoding="utf-8").replace(
+                "</MyObjectBuilder_Checkpoint>",
+                f"<PromotedUsers><dictionary>{items}</dictionary></PromotedUsers>"
+                "</MyObjectBuilder_Checkpoint>",
+                1,
+            ),
+            encoding="utf-8",
+        )
+    for name in ("Sandbox.sbc", "Sandbox_config.sbc"):
+        path = s.world / name
+        text = path.read_text(encoding="utf-8")
+        for key, value in (world or {}).items():
+            text = re.sub(rf"<{key}>[^<]*</{key}>", f"<{key}>{value}</{key}>", text)
+        path.write_text(text, encoding="utf-8")
     if not (s.config / "Sources").exists():
         s.config.mkdir(parents=True, exist_ok=True)
         shutil.copytree(MAGNETAR / "Magnetar" / "Sources", s.config / "Sources")
         shutil.copy(MAGNETAR / "Magnetar" / "config.xml", s.config / "config.xml")
+    sources = s.config / "Sources" / "sources.xml"
+    _register_source(sources, "se-sections", REPO, "SectionsServer.xml")
+    # Magnetar's core plugin from the working copy: GitHub rate limits the
+    # download of the hub's build now and then, and Magnetar quits without it
+    dev = ["direct-transport", *([SERVER_ID] if companion else [])]
+    if ERROR_REPORTING.exists():
+        _register_source(
+            sources, "error-reporting", ERROR_REPORTING, "ErrorReportingServer.xml"
+        )
+        dev.append("error-reporting")
     (s.config / "Profiles").mkdir(exist_ok=True)
-    (s.config / "Profiles" / "Current.xml").write_text(
-        _profile(["direct-transport"]), encoding="utf-8"
+    (s.config / "Profiles" / "Current.xml").write_text(_profile(dev), encoding="utf-8")
+    s.data.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(s.data / "Sections", ignore_errors=True)
+    options = "".join(
+        f"  <{k}>{v}</{k}>\n"
+        for k, v in {"DebugStatusFile": "true", **(config or {})}.items()
+    )
+    (s.data / "Sections.cfg").write_text(
+        f'<?xml version="1.0" encoding="utf-8"?>\n<SectionsServerConfig>\n{options}</SectionsServerConfig>\n',
+        encoding="utf-8",
     )
     text = DS_CONFIG_TEMPLATE.read_text(encoding="utf-8")
     for tag, value in {
@@ -544,7 +600,6 @@ def prepare_server(s: Server, admins=()) -> None:
             flags=re.S,
         )
         assert count == 1, tag
-    s.data.mkdir(parents=True, exist_ok=True)
     (s.data / "SpaceEngineers-Dedicated.cfg").write_text(text, encoding="utf-8")
 
 
@@ -552,11 +607,12 @@ def server_running(s: Server) -> bool:
     return _alive(s.pid_file, str(s.config)) is not None
 
 
-def start_server(s: Server, admins=(), timeout: float = 2400.0) -> None:
+def start_server(s: Server, admins=(), timeout: float = 2400.0, **options) -> None:
+    """`options` go to prepare_server"""
     if server_running(s):
         raise RuntimeError(f"Server {s.root} is already running")
     s.root.mkdir(parents=True, exist_ok=True)
-    prepare_server(s, admins)
+    prepare_server(s, admins, **options)
     process = _start(
         [
             str(MAGNETAR / "MagnetarInterim.bin"),
@@ -583,8 +639,30 @@ def stop_server(s: Server) -> None:
     _stop(s.pid_file, str(s.config), 120)
 
 
-def join(c: Client, s: Server, name: str, render: bool = False) -> RemoteAPI:
-    launch(c, render, ["--connect", f"127.0.0.1:{s.port}", "--client-name", name])
+def server_status(s: Server) -> dict:
+    """What the companion serves, by Steam id: grants and hidden block positions
+    by grid id. Written every second while it changes (DebugStatusFile)."""
+    path = s.data / "Sections" / "status-players.json"
+    if not path.exists():
+        return {}
+    for _ in range(5):
+        try:
+            players = json.loads(path.read_text(encoding="utf-8"))["players"]
+            return {int(p["steamId"]): p for p in players}
+        except (ValueError, KeyError):
+            time.sleep(0.2)
+    raise AssertionError(f"Cannot read {path}")
+
+
+def join(
+    c: Client, s: Server, name: str, render: bool = False, sections: dict | None = None
+) -> RemoteAPI:
+    launch(
+        c,
+        render,
+        ["--connect", f"127.0.0.1:{s.port}", "--client-name", name],
+        sections=sections,
+    )
     api = wait_api(c)
     wait_world(api)
     ensure_character(api)

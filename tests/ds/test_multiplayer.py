@@ -1,16 +1,17 @@
-"""A Sections client on a vanilla dedicated server.
+"""A Sections client on a vanilla dedicated server, without the companion.
 
-Section editing (copy, cut, delete, blueprint, clearing the reference data)
-runs only offline or on the host, so a client of a dedicated server cannot
-cut a section, and nothing restores references there until Sections has a
-server counterpart (se1/tickets/SE1-0068.md). These tests pin that down.
+Without the server companion, section editing (copy, cut, delete, blueprint,
+clearing the reference data) runs only offline or on the host, so a client of
+a dedicated server cannot cut a section. The client notices that no companion
+answers and keeps working as before. These tests pin that fallback down.
 
-SECTIONS_SLOT=<n> uv run pytest tests/ds
+SECTIONS_SLOT=<n> uv run pytest tests/ds/test_multiplayer.py
 """
 
 import time
 
 import rig
+from companion import NOT_SERVED, log_has, wait_until
 from harness import TARGET_ROW, TARGETS
 
 
@@ -21,6 +22,10 @@ def test_client_runs_sections(api):
     assert f"Sections ({rig.SECTIONS_ID})" in pulsar_log
     game_log = client.log.read_text(errors="replace")
     assert "ClientPlugin.Logic" not in game_log, "Sections threw an exception"
+
+
+def test_client_notices_there_is_no_companion(api):
+    wait_until(lambda: log_has(rig.client(1), NOT_SERVED), "the hello to time out", 60)
 
 
 def test_editing_is_refused_on_a_client(game):

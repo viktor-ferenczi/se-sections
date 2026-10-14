@@ -1,10 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
-using ClientPlugin.Logic;
 using HarmonyLib;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.Gui;
 using Sandbox.Game.Localization;
 using Sandbox.Graphics.GUI;
+using Shared.Logic;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 
