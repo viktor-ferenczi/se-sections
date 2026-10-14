@@ -17,9 +17,9 @@ folders come from a test slot of the workspace, see
 export SECTIONS_SLOT=11
 ```
 
-Client 0 of the slot runs the offline tests, client 1 and server 0 the
+Client 0 of the slot runs the offline tests, clients 1 and 2 and server 0 the
 dedicated server tests. Their folders are `~/.se-test/<task>-c0`, `-c0-data`,
-`-c1`, `-c1-data` and `-ds0`; the first launch creates them. Every launch goes
+`-c1`, `-c1-data`, `-c2`, `-c2-data` and `-ds0`; the first launch creates them. Every launch goes
 through `run-test.sh`, which waits until it leaves 8 GiB of RAM free. A
 client needs about 5.5 GiB and the server about 4 GiB.
 
@@ -32,7 +32,7 @@ Release the slot when you are done (`slot.sh release 11`).
 
 ```bash
 uv run pytest tests                  # offline, about 9 minutes
-uv run pytest tests/ds               # dedicated server
+uv run pytest tests/ds               # dedicated server, about 50 minutes
 ```
 
 The run starts a client, loads a fresh copy of the Remote suite's space world
@@ -111,12 +111,33 @@ hits the character.
 The game itself does not save the flight movement block's toolbar, so it is
 not checked.
 
-`tests/ds/test_multiplayer.py` joins a client to a vanilla Magnetar server
-over DirectTransport. Sections has no server counterpart yet
-(`se1/tickets/SE1-0068.md`), so section editing is refused on a client of a
-dedicated server and nothing restores references there. The tests check that
-the client runs Sections and that copy, cut and delete leave the grid and the
-clipboard alone.
+## Dedicated server
+
+Each module in `tests/ds` starts its own Magnetar server over DirectTransport,
+then joins Alice (client 1, an admin with creative tools on) and, when a test
+asks for him, Bob (client 2, a space master, so the rig can teleport him). The
+server companion is compiled from this working copy through a Magnetar dev
+folder (`SectionsServer.xml`), and so is Magnetar's error-reporting plugin
+(`se1/plugins/error-reporting`), since GitHub rate limits its download now and
+then. `SECTIONS_MAGNETAR_DIR` picks the Magnetar install, `~/.config/Magnetar`
+by default. The companion writes `Sections/status-players.json` into the
+server's data folder (`DebugStatusFile`): grants, hidden cells and character
+positions as the server sees them. The world is saved with Magnetar's `!save`
+chat command and read from the server's folder.
+
+- `test_multiplayer.py`: a vanilla server. The client notices that no
+  companion answers, and section editing is refused as before.
+- `test_companion.py`: the companion, with cutaways allowed for every access
+  level. Cut, copy, delete and blueprints give the same results as offline,
+  references included. Bob is refused, by his client and by the server for raw
+  requests. Hidden blocks lose collision for Alice only: she flies through the
+  wall, the server's copy of her character ends up behind it, and Bob is
+  stopped. Hidden blocks keep working, auto-hide and show-all reach the server,
+  Bob may hide his own grid but not Alice's, and the server forgets Alice when
+  she leaves.
+- `test_companion_survival.py`: the default access levels in a survival world.
+  Only the admin is granted, and turning creative tools off gives her
+  collision back.
 
 A paste onto a side face of a dynamic small grid makes a new grid instead of
 merging, so the SG tests paste onto top faces.
