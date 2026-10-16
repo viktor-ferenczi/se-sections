@@ -13,8 +13,8 @@ using VRage.Plugins;
 
 // Define assembly version when compiled by Pulsar
 #if !LOCAL_BUILD
-[assembly: AssemblyVersion("1.5.0.0")]
-[assembly: AssemblyFileVersion("1.5.0.0")]
+[assembly: AssemblyVersion("1.5.1.0")]
+[assembly: AssemblyFileVersion("1.5.1.0")]
 
 #endif
 
