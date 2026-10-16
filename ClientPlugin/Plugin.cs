@@ -11,6 +11,13 @@ using Sandbox.Graphics.GUI;
 using Shared.Logic;
 using VRage.Plugins;
 
+// Define assembly version when compiled by Pulsar
+#if !LOCAL_BUILD
+[assembly: AssemblyVersion("1.5.0.0")]
+[assembly: AssemblyFileVersion("1.5.0.0")]
+
+#endif
+
 namespace ClientPlugin
 {
     // ReSharper disable once UnusedType.Global
