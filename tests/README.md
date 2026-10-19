@@ -10,10 +10,10 @@ compiles Remote and Sections from the working copies.
 `rig.py` starts its own headless clients and servers, so the tests can run
 while other sessions test on the same machine. Their ports, client ids and
 folders come from a test slot of the workspace, see
-`se/notes/parallel-test-work/NOTE.md`:
+`se/testing/parallel-test-work/README.md`:
 
 ```bash
-~/ws/se/notes/parallel-test-work/slot.sh claim my-task   # prints the slot number
+~/ws/se/testing/parallel-test-work/slot.sh claim my-task   # prints the slot number
 export SECTIONS_SLOT=11
 ```
 
@@ -166,9 +166,10 @@ which these scripts expect; their `aim` assumes an upright character.
 On 2026-10-09 (Linux, a fresh slot client per script) all scripts passed
 except three. `test_cutaway.py` fails at the hidden battery step and
 `test_auto_hide_safety.py` at its last reload, both as described in
-`se1/notes/sections-cutaway/NOTE.md`. `test_auto_hide.py` fails at its final
-aim when the client is fresh and its character starts rolled. It passed when
-it ran after other scripts on the same client.
+workspace note [#665](https://tasks.cometworks.se/tasks/665).
+`test_auto_hide.py` fails at its final aim when the client is fresh and its
+character starts rolled. It passed when it ran after other scripts on the
+same client.
 
 Run `test_cutaway.py` against a disposable creative world with the Remote and
 Sections plugins enabled. Keep rendering enabled: the test uses real keyboard
