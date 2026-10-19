@@ -1,7 +1,7 @@
 """Isolated test clients and server for the Sections tests.
 
 Everything a run uses comes from a parallel test slot of the workspace
-(se/notes/parallel-test-work/NOTE.md), so several sessions can test at once:
+(se/testing/parallel-test-work/README.md), so several sessions can test at once:
 
     SECTIONS_SLOT=11 python -m pytest tests
 
@@ -43,7 +43,7 @@ PLUGINS = REPO.parent
 REMOTE_REPO = PLUGINS / "remote"
 # A worktree outside the workspace names it with SE_WORKSPACE
 WORKSPACE = Path(os.environ.get("SE_WORKSPACE", REPO.parents[2]))
-PARALLEL = WORKSPACE / "notes" / "parallel-test-work"
+PARALLEL = WORKSPACE / "testing" / "parallel-test-work"
 
 sys.path.insert(0, str(REMOTE_REPO / "skills" / "se-remote"))
 from se_remote import RemoteAPI  # noqa: E402
@@ -60,7 +60,7 @@ SPACE, EARTH = "RemoteAPITestSpace", "RemoteAPITestEarthPlanet"
 WORLD_NAME = "SectionsTest"
 LAUNCHER = "SectionsInterim.bin"
 
-# RSS of one client, settled in a world, for the RAM guard (NOTE.md, section 3)
+# RSS of one client, settled in a world, for the RAM guard (README.md, section 3)
 NEED_GIB = {"render": 5.5, "no-render": 3.7}
 SERVER_NEED_GIB = 4.0
 
@@ -84,7 +84,7 @@ def _slot() -> tuple[int, str] | None:
         Path(os.environ.get("SE_TEST_SLOTS", HOME / ".se-test/slots")) / value / "owner"
     )
     if not owner.exists():
-        raise RuntimeError(f"Slot {value} is not claimed, see {PARALLEL / 'NOTE.md'}")
+        raise RuntimeError(f"Slot {value} is not claimed, see {PARALLEL / 'README.md'}")
     return int(value), owner.read_text().strip()
 
 
@@ -229,7 +229,7 @@ def ensure_pulsar(c: Client) -> None:
     if not c.launcher.exists():
         subprocess.run(
             [
-                str(WORKSPACE / "notes/pulsar-dev-instances/new-pulsar-instance.sh"),
+                str(WORKSPACE / "testing/pulsar-dev-instances/new-pulsar-instance.sh"),
                 str(c.pulsar),
                 str(PULSAR_TEMPLATE),
             ],
