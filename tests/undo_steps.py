@@ -210,3 +210,81 @@ def cut_rotor_with_head(game: h.Game, history: History) -> None:
     wait_until(
         lambda: exists(game, ROTOR) and head in grids(), "the rotor and head back"
     )
+
+
+# --- symmetry (SE-1359) ---------------------------------------------------------------
+
+# Plane setups on the fixture grid, each crossing the selected row at `mid`, the
+# middle cell of the row along x: one plane even and odd, two odd planes, and
+# three even planes, the y plane through the rows themselves
+PLANE_SETUPS = {
+    "none": lambda mid: {},
+    "x-even": lambda mid: {"x": (mid, False)},
+    "x-odd": lambda mid: {"x": (mid, True)},
+    "xz-odd": lambda mid: {"x": (mid, True), "z": (0, True)},
+    "xyz-even": lambda mid: {"x": (mid, False), "y": (1, False), "z": (0, False)},
+}
+TARGET_MID = 13
+OWNER_MID = 4
+
+
+def set_planes(game: h.Game, planes: dict) -> None:
+    """Only the planes given on the fixture grid, the others removed, and the
+    game's symmetry option on"""
+    args = {}
+    for axis in "xyz":
+        if axis in planes:
+            p, odd = planes[axis]
+            cell = [0, 0, 0]
+            cell["xyz".index(axis)] = p
+            args[axis], args[f"{axis}_odd"] = cell, odd
+        else:
+            args[axis], args[f"{axis}_odd"] = None, False
+    game.api.set_grid_symmetry(game.grid, **args)
+    game.api.set_game_option("cubeBuilderUseSymmetry", True)
+
+
+def symmetry_off(game: h.Game) -> None:
+    game.api.set_game_option("cubeBuilderUseSymmetry", False)
+
+
+def one_step(history: History, node: dict) -> None:
+    """The step is the only one the action added: its parent is the step that
+    was current before it"""
+    time.sleep(1)
+    assert history.current()["id"] == node["id"], history.labels()
+    assert history.node(node["parent"]) is not None or node["parent"] == 0
+
+
+def paste_into_grid(game: h.Game, history: History) -> None:
+    """A copy of the target row pasted onto the floor behind it, at z -1: one
+    step, undo removes every pasted block and redo pastes them again"""
+    grids = lambda: {
+        g["entityId"]: g.get("name") for g in game.api.list_grids()
+    }  # noqa: E731
+    before = grids()
+    game.copy(*TARGET_ROW, ctrl=True)
+    last = history.build()["current"]
+    game.paste_on((15, 0, -1))
+    pasted = [(x, 1, -1) for x in range(11, 16)]
+    wait_until(lambda: exist(game, pasted), "the paste into the grid")
+    node = wait_until(
+        lambda: (n := history.current()) and n["id"] != last and n,
+        "the paste in the history",
+    )
+    assert node["parent"] == last, history.labels()
+    one_step(history, node)
+    game.leave_screens()
+
+    undo(game, history, node)
+    wait_until(lambda: gone(game, pasted), "the paste undone")
+    assert exist(game, TARGET_CELLS)
+    redo(game, history, node)
+    wait_until(lambda: exist(game, pasted), "the paste again after the redo")
+    undo(game, history, node)
+    wait_until(lambda: gone(game, pasted), "the paste undone again")
+    try:
+        wait_until(lambda: grids().keys() == before.keys(), "the grids", timeout=10)
+    except AssertionError:
+        raise AssertionError(f"Grids before the paste {before}, now {grids()}")
+    assert_references(game)
