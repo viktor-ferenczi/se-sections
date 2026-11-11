@@ -692,7 +692,7 @@ namespace ClientPlugin.Logic
                 return;
 
             CopyToClipboard(CreateGridBuilders(editor));
-            editor.Delete();
+            editor.Delete("cut", 0);
         }
 
         private void Delete(bool includeIntersectingBlocks)
@@ -703,7 +703,7 @@ namespace ClientPlugin.Logic
                 return;
             }
 
-            CollectLocally(includeIntersectingBlocks)?.Delete();
+            CollectLocally(includeIntersectingBlocks)?.Delete("deleted", 0);
         }
 
         // Null when nothing is selected

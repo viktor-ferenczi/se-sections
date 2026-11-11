@@ -4,6 +4,7 @@ using Sandbox.Engine.Physics;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
+using Shared.Companion;
 using VRage.Game.Entity;
 using VRageMath;
 
@@ -18,7 +19,7 @@ public static class CutawayContactPatch
 {
     private static bool Prefix(MyCharacter __instance, ref HkContactPointEvent value)
     {
-        if (!Companion.HasHiddenBlocks(__instance.EntityId))
+        if (!CompanionServer.HasHiddenBlocks(__instance.EntityId))
             return true;
 
         var bodyA = value.Base.BodyA?.GetBody();
@@ -33,7 +34,7 @@ public static class CutawayContactPatch
             MyEntitySubpart subpart => BlockOfSubpart(subpart),
             _ => null,
         };
-        if (!Companion.IsHiddenFor(__instance.EntityId, block))
+        if (!CompanionServer.IsHiddenFor(__instance.EntityId, block))
             return true;
 
         // Skips the game's handling too: no footstep, sound or damage from a hidden block

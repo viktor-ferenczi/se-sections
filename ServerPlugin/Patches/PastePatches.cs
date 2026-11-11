@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Sandbox.Game.Entities;
+using Shared.Companion;
 using VRage.Network;
 
 namespace ServerPlugin.Patches;
@@ -20,7 +21,7 @@ public static class PasteGridPatch
     private static void Postfix(List<MyCubeGrid> ___m_pastedGrids, EndpointId ___SenderEndpointId)
     {
         if (___m_pastedGrids != null)
-            Companion.OnPasted(___m_pastedGrids, ___SenderEndpointId.Value);
+            CompanionServer.OnPasted(___m_pastedGrids, ___SenderEndpointId.Value);
     }
 }
 
@@ -32,6 +33,6 @@ public static class PasteBlocksToGridPatch
     {
         var context = MyEventContext.Current;
         var paster = context.IsValid && !context.IsLocallyInvoked ? context.Sender.Value : 0UL;
-        Companion.OnPasted(new[] { __instance }, paster);
+        CompanionServer.OnPasted(new[] { __instance }, paster);
     }
 }

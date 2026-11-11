@@ -91,10 +91,14 @@ namespace Shared.Logic
             return gridBuilders;
         }
 
-        public void Delete()
+        // The verb names the operation in the Undo plugin's history: "cut", "deleted".
+        // The Steam id is the player's who asked, 0 for the local player.
+        public void Delete(string verb, ulong steamId)
         {
             if (BlockMinPositions == null)
                 Collect();
+
+            UndoBridge.RecordRemoval(grid, BlockMinPositions, Subgrids, UndoLabel(verb), steamId);
 
             foreach (var min in BlockMinPositions)
             {
@@ -109,6 +113,15 @@ namespace Shared.Logic
             {
                 subgrid.Close();
             }
+        }
+
+        private string UndoLabel(string verb)
+        {
+            var count = BlockMinPositions.Count;
+            var label = $"{verb} {count} {(count == 1 ? "block" : "blocks")} with Sections";
+            return Subgrids.Count == 0
+                ? label
+                : $"{label}, {Subgrids.Count} {(Subgrids.Count == 1 ? "subgrid" : "subgrids")}";
         }
 
         private HashSet<Vector3I> CollectMinOfBlocksInBox()

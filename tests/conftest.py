@@ -1,7 +1,9 @@
 """One isolated rendering client for the whole run, on a fresh copy of the test
 world. Sections draws its selection, which crashes a --no-render client. A test
 module that needs other Sections settings sets SECTIONS_SETTINGS, and the client
-restarts with them.
+restarts with them. A module that sets UNDO = True gets a client with the Undo
+plugin too, from its working copy (rig.UNDO_REPO), and MODS lists folders of local
+mods for its world.
 
 SECTIONS_ATTACH=1 uses a client that is already running (rig.py start) and
 skips the modules that set SECTIONS_SETTINGS. SECTIONS_KEEP=1 leaves the client
@@ -26,13 +28,15 @@ def start_client():
     client = rig.client(0)
     running = {}
 
-    def start(settings: dict):
+    def start(settings: dict, undo: bool = False, mods=()):
         if ATTACH:
             return rig.connect(client)
-        if running.get("settings") != settings:
+        if running.get("settings") != (settings, undo, mods):
             rig.stop(client)
-            running["settings"] = settings
-            running["api"] = rig.start_offline(client, render=True, sections=settings)
+            running["settings"] = (settings, undo, mods)
+            running["api"] = rig.start_offline(
+                client, render=True, sections=settings, undo=undo, mods=mods
+            )
         return running["api"]
 
     try:
@@ -47,7 +51,11 @@ def api(start_client, request):
     settings = getattr(request.module, "SECTIONS_SETTINGS", {})
     if ATTACH and settings:
         pytest.skip(f"Needs a client started with {settings}")
-    return start_client(settings)
+    return start_client(
+        settings,
+        getattr(request.module, "UNDO", False),
+        tuple(getattr(request.module, "MODS", ())),
+    )
 
 
 @pytest.fixture

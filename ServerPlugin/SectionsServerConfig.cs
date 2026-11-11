@@ -1,4 +1,5 @@
 using PluginSdk.Config;
+using Shared.Companion;
 using VRage.Game.ModAPI;
 
 namespace ServerPlugin;
@@ -6,7 +7,7 @@ namespace ServerPlugin;
 [Section("access", caption: "Access")]
 [Section("limits", caption: "Limits")]
 [Section("debug", caption: "Diagnostics")]
-public class SectionsServerConfig : PluginConfig
+public class SectionsServerConfig : PluginConfig, ICompanionOptions
 {
     [EnumOption(
         "Lowest game access level allowed to copy, cut, delete and blueprint sections",

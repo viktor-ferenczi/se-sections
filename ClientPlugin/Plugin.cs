@@ -13,8 +13,8 @@ using VRage.Plugins;
 
 // Define assembly version when compiled by Pulsar
 #if !LOCAL_BUILD
-[assembly: AssemblyVersion("1.5.1.0")]
-[assembly: AssemblyFileVersion("1.5.1.0")]
+[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.0.0")]
 
 #endif
 
@@ -70,6 +70,7 @@ namespace ClientPlugin
             Cutaway.Update();
             Logic.Logic.Static?.Update();
             CompanionClient.Update();
+            LobbyHost.Update();
         }
 
         // ReSharper disable once UnusedMember.Global

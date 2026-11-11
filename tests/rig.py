@@ -50,6 +50,12 @@ from se_remote import RemoteAPI  # noqa: E402
 
 SECTIONS_ID = "viktor-ferenczi/se-sections"
 SERVER_ID = ET.parse(REPO / "SectionsServer.xml").getroot().findtext("Id")
+# The Undo plugin's working copy, for the tests of Sections with Undo (SE-606).
+# Its client and server manifests share one id.
+UNDO_REPO = Path(os.environ.get("SECTIONS_UNDO_REPO", PLUGINS / "se-undo"))
+UNDO_ID = "AC284074-A676-4930-B47A-F30450988608"
+# Undo's status files (status.json, status-players.json) for the tests to read
+UNDO_CONFIG = {"DebugStatusFile": "true", "LogLevel": "Debug"}
 PULSAR_TEMPLATE = Path(
     os.environ.get("SECTIONS_PULSAR_TEMPLATE", HOME / ".config/Pulsar")
 )
@@ -221,10 +227,11 @@ def _profile(ids) -> str:
     )
 
 
-def ensure_pulsar(c: Client) -> None:
+def ensure_pulsar(c: Client, undo: bool = False) -> None:
     """Creates the client's Pulsar folder from the machine's Pulsar install on first
     use (new-pulsar-instance.sh), with a renamed launcher. The profile enables only
-    Remote, Sections and DirectTransport, Remote and Sections from the working copies.
+    Remote, Sections and DirectTransport, Remote and Sections from the working copies,
+    and with `undo` the Undo plugin from its working copy too.
     """
     if not c.launcher.exists():
         subprocess.run(
@@ -244,15 +251,33 @@ def ensure_pulsar(c: Client) -> None:
     _register_source(
         legacy / "Sources" / "sources.xml", "se-sections", REPO, "Sections.xml"
     )
+    if undo:
+        _register_source(
+            legacy / "Sources" / "sources.xml", "se-undo", UNDO_REPO, "Undo.xml"
+        )
     (legacy / "Profiles").mkdir(exist_ok=True)
     (legacy / "Profiles" / "Current.xml").write_text(
-        _profile(["remote", SECTIONS_ID, "direct-transport"]), encoding="utf-8"
+        _profile(
+            ["remote", SECTIONS_ID, "direct-transport", *([UNDO_ID] if undo else [])]
+        ),
+        encoding="utf-8",
     )
 
 
-def write_configs(c: Client, sections: dict | None = None) -> None:
+def _config_xml(root: str, options: dict) -> str:
+    lines = "".join(f"  <{k}>{v}</{k}>\n" for k, v in options.items())
+    return f'<?xml version="1.0" encoding="utf-8"?>\n<{root}>\n{lines}</{root}>\n'
+
+
+def write_configs(c: Client, sections: dict | None = None, undo: bool = False) -> None:
     storage = c.appdata / "Storage"
     storage.mkdir(parents=True, exist_ok=True)
+    if undo:
+        # A fresh history and grid store for each launch
+        shutil.rmtree(c.appdata / "Undo", ignore_errors=True)
+        (storage / "Undo.cfg").write_text(
+            _config_xml("Config", UNDO_CONFIG), encoding="utf-8"
+        )
     options = "".join(
         f"  <{k}>{v}</{k}>\n"
         for k, v in {**SECTIONS_CONFIG, **(sections or {})}.items()
@@ -321,6 +346,44 @@ def prepare_world(world: Path, online: str = "OFFLINE", template: str = SPACE) -
     return world
 
 
+def add_local_mods(c: Client, world: Path, mods) -> None:
+    """Copies mod folders into the client's Mods folder and adds them to the world"""
+    items = ""
+    for mod in map(Path, mods):
+        target = c.appdata / "Mods" / mod.name
+        shutil.rmtree(target, ignore_errors=True)
+        shutil.copytree(mod, target)
+        items += (
+            f'<ModItem FriendlyName="{mod.name}"><Name>{mod.name}</Name>'
+            "<PublishedFileId>0</PublishedFileId></ModItem>"
+        )
+    if not items:
+        return
+    for name in ("Sandbox.sbc", "Sandbox_config.sbc"):
+        path = world / name
+        text = path.read_text(encoding="utf-8")
+        text, count = re.subn(r"<Mods\s*/>", f"<Mods>{items}</Mods>", text)
+        assert count == 1, name
+        path.write_text(text, encoding="utf-8")
+
+
+def promote(world: Path, promoted: dict) -> None:
+    """Game access levels by Steam id, like {steam_id: "Admin"}"""
+    checkpoint = world / "Sandbox.sbc"
+    items = "".join(
+        f"<item><Key>{k}</Key><Value>{v}</Value></item>" for k, v in promoted.items()
+    )
+    checkpoint.write_text(
+        checkpoint.read_text(encoding="utf-8").replace(
+            "</MyObjectBuilder_Checkpoint>",
+            f"<PromotedUsers><dictionary>{items}</dictionary></PromotedUsers>"
+            "</MyObjectBuilder_Checkpoint>",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Processes. Each runs in a session of its own, started through run-test.sh, so
 # stopping kills exactly the process group this rig started.
@@ -373,12 +436,16 @@ def client_running(c: Client) -> bool:
 
 
 def launch(
-    c: Client, render: bool = False, extra_args=(), sections: dict | None = None
+    c: Client,
+    render: bool = False,
+    extra_args=(),
+    sections: dict | None = None,
+    undo: bool = False,
 ) -> None:
     if client_running(c):
         raise RuntimeError(f"Client {c.pulsar} is already running")
-    ensure_pulsar(c)
-    write_configs(c, sections)
+    ensure_pulsar(c, undo)
+    write_configs(c, sections, undo)
     c.log.unlink(missing_ok=True)
     args = [
         "-multiInstance", "-lazySteam", "-noprompt", "-noupdate", "-nosplash",
@@ -486,12 +553,19 @@ def focus_gameplay(api: RemoteAPI, timeout: float = 60.0) -> None:
 
 
 def start_offline(
-    c: Client, render: bool = False, sections: dict | None = None, template: str = SPACE
+    c: Client,
+    render: bool = False,
+    sections: dict | None = None,
+    template: str = SPACE,
+    undo: bool = False,
+    mods=(),
 ) -> RemoteAPI:
-    """Starts a client and loads a fresh copy of the test world"""
-    launch(c, render, sections=sections)
+    """Starts a client and loads a fresh copy of the test world. `mods` are folders
+    of local mods the world loads."""
+    launch(c, render, sections=sections, undo=undo)
     api = wait_api(c)
     world = prepare_world(c.world, template=template)
+    add_local_mods(c, world, mods)
     try:
         api.load(str(world))
     except Exception:  # noqa: BLE001 -- the load outlives the HTTP timeout
@@ -527,26 +601,15 @@ def prepare_server(
     config: dict | None = None,
     world: dict | None = None,
     promoted: dict | None = None,
+    undo: bool = False,
 ) -> None:
     """The companion is compiled from this working copy (SectionsServer.xml as a
     dev folder). `config` overrides its Sections.cfg, `world` the world settings.
-    `promoted` gives players a game access level, like {steam_id: "SpaceMaster"}."""
+    `promoted` gives players a game access level, like {steam_id: "SpaceMaster"}.
+    `undo` adds the Undo companion from its working copy (UndoServer.xml)."""
     prepare_world(s.world, online="PUBLIC")
     if promoted:
-        checkpoint = s.world / "Sandbox.sbc"
-        items = "".join(
-            f"<item><Key>{k}</Key><Value>{v}</Value></item>"
-            for k, v in promoted.items()
-        )
-        checkpoint.write_text(
-            checkpoint.read_text(encoding="utf-8").replace(
-                "</MyObjectBuilder_Checkpoint>",
-                f"<PromotedUsers><dictionary>{items}</dictionary></PromotedUsers>"
-                "</MyObjectBuilder_Checkpoint>",
-                1,
-            ),
-            encoding="utf-8",
-        )
+        promote(s.world, promoted)
     for name in ("Sandbox.sbc", "Sandbox_config.sbc"):
         path = s.world / name
         text = path.read_text(encoding="utf-8")
@@ -561,7 +624,12 @@ def prepare_server(
     _register_source(sources, "se-sections", REPO, "SectionsServer.xml")
     # Magnetar's core plugin from the working copy: GitHub rate limits the
     # download of the hub's build now and then, and Magnetar quits without it
-    dev = ["direct-transport", *([SERVER_ID] if companion else [])]
+    _register_source(sources, "se-undo", UNDO_REPO, "UndoServer.xml")
+    dev = [
+        "direct-transport",
+        *([SERVER_ID] if companion else []),
+        *([UNDO_ID] if undo else []),
+    ]
     if ERROR_REPORTING.exists():
         _register_source(
             sources, "error-reporting", ERROR_REPORTING, "ErrorReportingServer.xml"
@@ -571,6 +639,10 @@ def prepare_server(
     (s.config / "Profiles" / "Current.xml").write_text(_profile(dev), encoding="utf-8")
     s.data.mkdir(parents=True, exist_ok=True)
     shutil.rmtree(s.data / "Sections", ignore_errors=True)
+    shutil.rmtree(s.data / "Undo", ignore_errors=True)
+    (s.data / "Undo.cfg").write_text(
+        _config_xml("UndoServerConfig", UNDO_CONFIG), encoding="utf-8"
+    )
     options = "".join(
         f"  <{k}>{v}</{k}>\n"
         for k, v in {"DebugStatusFile": "true", **(config or {})}.items()
@@ -655,13 +727,97 @@ def server_status(s: Server) -> dict:
 
 
 def join(
-    c: Client, s: Server, name: str, render: bool = False, sections: dict | None = None
+    c: Client,
+    s: Server,
+    name: str,
+    render: bool = False,
+    sections: dict | None = None,
+    undo: bool = False,
 ) -> RemoteAPI:
     launch(
         c,
         render,
         ["--connect", f"127.0.0.1:{s.port}", "--client-name", name],
         sections=sections,
+        undo=undo,
+    )
+    api = wait_api(c)
+    wait_world(api)
+    ensure_character(api)
+    focus_gameplay(api)
+    return api
+
+
+# ---------------------------------------------------------------------------
+# Friends game: a client hosts the test world as a lobby, another joins it, both
+# over DirectTransport, without Steam (workspace note direct-transport-lobby-rig)
+# ---------------------------------------------------------------------------
+
+
+def lobby_port() -> int:
+    """The UDP port of the lobby: server 5's port of the slot, which no test uses"""
+    if SLOT is None:
+        raise RuntimeError("The lobby tests need SECTIONS_SLOT")
+    return 28000 + 10 * SLOT[0] + 5
+
+
+def start_lobby_host(
+    c: Client, promoted: dict | None = None, undo: bool = False
+) -> RemoteAPI:
+    """Loads a fresh copy of the test world offline and saves it, which writes the
+    binary sector a bare XML world lacks, then loads it again as a friends game.
+    `promoted` gives joining players an access level; an offline save drops
+    promotions, so they go into the saved world."""
+    launch(
+        c,
+        True,
+        ["--host-lobby", str(lobby_port()), "--client-name", "SectionsHost"],
+        undo=undo,
+    )
+    api = wait_api(c)
+    world = prepare_world(c.world)
+    try:
+        api.load(str(world))
+    except Exception:  # noqa: BLE001 -- the load outlives the HTTP timeout
+        pass
+    wait_world(api)
+    api.save()
+    time.sleep(1)
+    deadline = time.monotonic() + 120
+    while api.get_state()["saving"]:
+        if time.monotonic() > deadline:
+            raise TimeoutError("The host did not save the world")
+        time.sleep(0.5)
+    if promoted:
+        promote(world, promoted)
+    try:
+        api.load(str(world), online_mode="FRIENDS", max_players=4)
+    except Exception:  # noqa: BLE001 -- the load outlives the HTTP timeout
+        pass
+    deadline = time.monotonic() + 600
+    while True:
+        try:
+            if api.get_state().get("multiplayer") == "lobby-host":
+                break
+        except Exception:  # noqa: BLE001 -- the API times out while a world loads
+            pass
+        if not client_running(c):
+            raise RuntimeError(f"The host exited, see {c.appdata / 'launch.log'}")
+        if time.monotonic() > deadline:
+            raise TimeoutError("The host did not start hosting")
+        time.sleep(1)
+    wait_world(api)
+    ensure_character(api)
+    focus_gameplay(api)
+    return api
+
+
+def join_lobby(c: Client, name: str, undo: bool = False) -> RemoteAPI:
+    launch(
+        c,
+        True,
+        ["--join-lobby", f"127.0.0.1:{lobby_port()}", "--client-name", name],
+        undo=undo,
     )
     api = wait_api(c)
     wait_world(api)
