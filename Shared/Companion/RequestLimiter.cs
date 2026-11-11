@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ServerPlugin;
+namespace Shared.Companion;
 
 // A token bucket per player: each request costs tokens, the bucket refills over time.
 // Knows nothing about the game. Copied from the Undo companion.

@@ -7,6 +7,8 @@ Each test module gets a fresh server. Module attributes choose what it runs:
 - SERVER_CONFIG: overrides for the companion's Sections.cfg.
 - WORLD: overrides for the world settings, like {"GameMode": "Survival"}.
 - CLIENT_SETTINGS: Sections settings of Alice's client, on top of the rig's.
+- UNDO_SERVER: True adds the Undo companion, from Undo's working copy.
+- UNDO_CLIENT: True gives Alice's client the Undo plugin too (SE-606).
 
 Client 1 of the slot joins as Alice, an admin with creative tools on. Client 2
 joins as Bob, a space master (the test rig teleports him), only for the tests
@@ -99,6 +101,7 @@ def server(request):
             companion=_module_option(request, "COMPANION", False),
             config=_module_option(request, "SERVER_CONFIG", None),
             world=_module_option(request, "WORLD", None),
+            undo=_module_option(request, "UNDO_SERVER", False),
         )
         yield s
     finally:
@@ -116,6 +119,7 @@ def api(server, request):
         ALICE,
         render=True,
         sections=_module_option(request, "CLIENT_SETTINGS", None),
+        undo=_module_option(request, "UNDO_CLIENT", False),
     )
     api.set_admin_flag("creativeTools", True)
     return api

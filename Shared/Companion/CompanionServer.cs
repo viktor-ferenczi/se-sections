@@ -9,15 +9,13 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using Shared;
-using Shared.Companion;
 using Shared.Logic;
 using VRage.FileSystem;
 using VRage.Game.ModAPI;
 using VRage.GameServices;
 using VRageMath;
 
-namespace ServerPlugin;
+namespace Shared.Companion;
 
 // A player who said Hello. The hidden blocks are the ones this player removed
 // collision from; only this player's character passes through them.
@@ -72,10 +70,25 @@ internal sealed class ServedPlayer
     }
 }
 
+// What decides the grants of the players served, the server plugin's config on a
+// dedicated server
+public interface ICompanionOptions
+{
+    MyPromoteLevel EditAccessLevel { get; }
+    MyPromoteLevel CutawayAccessLevel { get; }
+    bool CutawayNeedsCreative { get; }
+    MyPromoteLevel AnyGridAccessLevel { get; }
+    int MaxHiddenBlocksPerPlayer { get; }
+    bool DebugStatusFile { get; }
+}
+
 // The server half: answers the client plugin's requests after checking them for the
 // sending player, and lets each player's character through the blocks that player hid.
-// Nothing a client sends is trusted, the grants are decided here.
-public static class Companion
+// Nothing a client sends is trusted, the grants are decided here. Runs on a dedicated
+// server with the server plugin, and on a lobby host with the client plugin, which
+// serves section editing but not collision removal: its joined players' cutaways stay
+// visual only, as without the companion.
+public static class CompanionServer
 {
     private const int CheckIntervalTicks = 60;
     private const int CharacterIntervalTicks = 10;
@@ -99,14 +112,17 @@ public static class Companion
 
     public static bool Running => running;
 
-    private static SectionsServerConfig Config => Plugin.Config;
+    private static ICompanionOptions Config;
+    private static bool serveCutaways;
 
-    public static void Start()
+    public static void Start(ICompanionOptions options, bool cutaways)
     {
         if (running || MyMultiplayer.Static == null || MyAPIGateway.Multiplayer == null)
             return;
 
         running = true;
+        Config = options;
+        serveCutaways = cutaways;
         served.Clear();
         byCharacter = new Dictionary<long, ServedPlayer>();
         limiter.Clear();
@@ -243,7 +259,9 @@ public static class Companion
         {
             Edit = level >= Config.EditAccessLevel && session.IsCopyPastingEnabledForUser(steamId),
             Cutaway =
-                level >= Config.CutawayAccessLevel && (creative || !Config.CutawayNeedsCreative),
+                serveCutaways
+                && level >= Config.CutawayAccessLevel
+                && (creative || !Config.CutawayNeedsCreative),
             AnyGrid = level >= Config.AnyGridAccessLevel,
         };
     }
@@ -516,7 +534,10 @@ public static class Companion
                 editor.CreateGridBuilders(request.OriginBlockMin, request.SizeText)
             );
         if (removes)
-            editor.Delete();
+            editor.Delete(
+                request.Operation == EditOperation.Cut ? "cut" : "deleted",
+                player.SteamId
+            );
 
         Log.Info(
             $"{request.Operation} by {player.SteamId}: {editor.BlockMinPositions.Count} blocks and {editor.Subgrids.Count} subgrids of {grid.DisplayName}"

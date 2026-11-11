@@ -32,9 +32,23 @@ Please consider supporting my work on [Patreon](https://www.patreon.com/semods) 
 - [Test World](https://steamcommunity.com/sharedfiles/filedetails/?id=3386716105)
 
 Section editing works in creative mode, or in survival with creative tools
-enabled. Multiplayer section editing runs on the host, or on a dedicated server
-that runs the [Sections server companion](#dedicated-servers). Cutaways can also
+enabled. Multiplayer section editing runs on the host, for the host and for the
+joined players who run Sections, or on a dedicated server that runs the
+[Sections server companion](#dedicated-servers). Cutaways can also
 run on multiplayer clients under the permissions described below.
+
+### New in 1.6.0
+
+Cut and delete can be undone with the [Undo](https://github.com/viktor-ferenczi/se-undo)
+plugin. With both plugins loaded, each cut or delete is one step in Undo's history:
+Ctrl-Z puts the blocks back as they were, references and toolbars included, and
+Ctrl-Y removes them again. A paste is undone the same way, Undo records it anyway.
+This works offline, in friends games and on dedicated servers that run both
+companions. Sections still works without Undo, and Undo without Sections.
+
+In a friends game the host now carries out section editing for the joined players
+who run Sections, with the same rule as a dedicated server: admins only.
+Cutaways stay visual only for them.
 
 ### New in 1.5.0
 
